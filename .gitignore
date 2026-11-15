@@ -1,0 +1,74 @@
+# Environment variables
+.env
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual environments
+venv/
+env/
+ENV/
+.venv
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Logs
+*.log
+logs/
+
+# Database & Data — dış kaynaktan türetilmiş hiçbir veri yayına girmez
+# (graf, parquet, model ağırlıkları dahil). Yalnız şema + dokümanlar açık.
+data/*
+!data/position_metrics.md
+!data/db/
+data/db/*
+!data/db/*.sql
+!data/db/migrations/
+*.duckdb
+*.db
+*.parquet
+*.pt
+*.pth
+*.pkl
+
+# Raporlar / analiz çıktıları (gerçek oyuncu verisi içerir)
+reports/
+*.pdf
+kocaeli_*
+scraping_*.txt
+test_output.txt
+downloaded_files/
+
+# Kişisel Claude ayarları
+.claude/settings.local.json
+
+# OS
+.DS_Store
+Thumbs.db
+
+# soccerdata cache
+.soccerdata/
