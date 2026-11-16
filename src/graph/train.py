@@ -1,4 +1,4 @@
-"""SynergyHGT eğitimi.
+"""SynergyHGT training.
 
 Split: player-disjoint 70/15/15 (default) or random edge split.
 Loss: MSE (optionally minutes-weighted) + optional pairwise ranking loss.
@@ -23,9 +23,9 @@ def _ranking_loss(pred: torch.Tensor, target: torch.Tensor,
                   num_pairs: int = 8192, gen: torch.Generator | None = None) -> torch.Tensor:
     """Pairwise logistic ranking loss — Spearman surrogate.
 
-    Rastgele (i, j) çiftleri örnekler; target[i] != target[j] olanlar için
-    pred'in doğru sırayı vermesini ödüllendirir: softplus(-sign(Δy)·Δpred).
-    MSE'nin aksine doğrudan SIRALAMA (ρ) optimize eder.
+    Samples random (i, j) pairs; where target[i] != target[j] it rewards the
+    prediction for getting the order right: softplus(-sign(Δy)·Δpred).
+    Unlike MSE it optimises the RANKING (ρ) directly.
     """
     n = pred.shape[0]
     if n < 2:
@@ -62,14 +62,14 @@ def _split_edges_player_disjoint(
     val: float = 0.15,
     seed: int = 42,
 ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, dict]:
-    """Oyuncuyu böl, kenarı değil.
+    """Split players, not edges.
 
     train edge: her iki ucu da train_player
     val edge:   her iki ucu train∪val ve en az biri val (inductive)
     test edge:  en az bir ucu test_player
 
-    Bu ayar gerçek genelleme ölçer: model test oyuncularını eğitimde hiç görmez
-    (message passing dahil — train kenarları zaten train-train).
+    This measures real generalisation: test players' teammate edges never appear in
+    training or in message passing (training edges are train-train only).
     """
     g = torch.Generator().manual_seed(seed)
     perm = torch.randperm(num_players, generator=g)
@@ -108,14 +108,13 @@ def _build_message_passing_data(
     edge_dropout: float = 0.0,
     generator: torch.Generator | None = None,
 ) -> HeteroData:
-    """Mesaj geçişi sırasında sadece train kenarlarını kullan (data leakage'i önler).
+    """Use only training teammate edges for message passing (prevents leakage).
 
-    Edge'ler `build.py`'da çift yönlü eklendi: ilk yarı orijinal, ikinci yarı ters.
-    Train indeks'lerini her iki yön için kullanmak gerekir.
+    `build.py` stores every edge twice: first half original, second half reversed,
+    so the training indices are applied to both halves.
 
-    edge_dropout > 0 ise her çağrıda train kenarlarının bu oranı maskelenir.
-    Aynı kenarın her iki yönü de eşzamanlı düşürülür (yön tutarlılığı).
-    Cold-start oyuncuların embedding'ini düzenlileştirir.
+    With edge_dropout > 0 that share of training edges is masked on every call,
+    both directions of an edge together. Regularises cold-start embeddings.
     """
     out = data.clone()
     et = ("player", "teammate", "player")
@@ -144,11 +143,10 @@ def _cold_start_mask(
     train_idx: torch.Tensor,
     test_idx: torch.Tensor,
 ) -> torch.Tensor:
-    """Test kenarları içinde, **her iki ucu da** train'de hiç görülmemiş olanlar.
+    """Test edges whose **two** players never appear in a training edge.
 
-    True cold-start: oyuncu modele yalnız node feature olarak girer (hiç teammate
-    bağlantısı yok). Bu metrik, modelin gerçekten yeni transferlerde nasıl
-    çalıştığını ölçer.
+    True cold-start: both players enter the model only through their node features
+    (no teammate edge). This is how the model performs on genuinely new signings.
     """
     seen = torch.zeros(int(max(pair_src.max(), pair_dst.max())) + 1, dtype=torch.bool)
     seen[pair_src[train_idx]] = True
@@ -170,15 +168,15 @@ def train(season: str, epochs: int = 100, lr: float = 1e-3, hidden: int = 128, e
     data = data.to(device)
 
     et = ("player", "teammate", "player")
-    # Edge'ler çift yönlü → label hesabı için bir yön yeterli
+    # Edges are stored in both directions → one direction is enough for labels
     ei_full = data[et].edge_index
     half = ei_full.shape[1] // 2
     pair_src = ei_full[0, :half]
     pair_dst = ei_full[1, :half]
     y = data[et].y[:half]
 
-    # Kenar başına güvenilirlik ağırlığı: sqrt(minutes_together).
-    # edge_attr kolon sırası (build.py): [minutes_together, matches_together, joint_g,
+    # Per-edge reliability weight: sqrt(minutes_together).
+    # edge_attr column order (build.py): [minutes_together, matches_together, joint_g,
     #   joint_a, joint_xg, joint_xa, per90_joint_output]
     if hasattr(data[et], "edge_attr"):
         minutes_together = data[et].edge_attr[:half, 0].clamp(min=1.0)
@@ -195,7 +193,7 @@ def train(season: str, epochs: int = 100, lr: float = 1e-3, hidden: int = 128, e
         train_idx = train_idx.to(device); val_idx = val_idx.to(device); test_idx = test_idx.to(device)
         print(f"[split] player-disjoint | players={split_info['players']} | edges={split_info['edges']}")
         if len(train_idx) == 0 or len(val_idx) == 0 or len(test_idx) == 0:
-            raise RuntimeError(f"player-disjoint split boş bir bölge üretti: {split_info}")
+            raise RuntimeError(f"player-disjoint split produced an empty partition: {split_info}")
     elif split == "random":
         train_idx, val_idx, test_idx = _split_edges(half)
         print(f"[split] random (edge-level) | train={len(train_idx)} val={len(val_idx)} test={len(test_idx)}")
@@ -231,13 +229,13 @@ def train(season: str, epochs: int = 100, lr: float = 1e-3, hidden: int = 128, e
                                               generator=dropout_gen)
         emb = model.encode(mp_data)["player"]
         preds_train = model.predict_edge(emb, pair_src[train_idx], pair_dst[train_idx])
-        # MSE (opsiyonel minutes-ağırlıklı: gürültülü düşük-dakika çiftlerini kıs)
+        # MSE (optionally minutes-weighted: down-weight noisy low-minute pairs)
         if weighted:
             se = (preds_train - y[train_idx]) ** 2
             loss = (w_train * se).sum() / w_train.sum()
         else:
             loss = loss_fn(preds_train, y[train_idx])
-        # Ranking term (Spearman surrogate) — doğrudan sıralamayı iyileştirir
+        # Ranking term (Spearman surrogate) — improves the ordering directly
         if rank_weight > 0:
             loss = loss + rank_weight * _ranking_loss(
                 preds_train, y[train_idx], gen=rank_gen)
@@ -245,7 +243,7 @@ def train(season: str, epochs: int = 100, lr: float = 1e-3, hidden: int = 128, e
 
         model.eval()
         with torch.no_grad():
-            # Eval: dropout kapalı, tam train graf'ı kullan
+            # Eval: no dropout, full training graph
             mp_eval = _build_message_passing_data(data, train_idx, edge_dropout=0.0)
             emb = model.encode(mp_eval)["player"]
             preds_val = model.predict_edge(emb, pair_src[val_idx], pair_dst[val_idx])
@@ -256,8 +254,8 @@ def train(season: str, epochs: int = 100, lr: float = 1e-3, hidden: int = 128, e
         history.append({"epoch": epoch, "train_loss": float(loss.item()),
                         "val_mse": float(val_mse), "val_rho": float(rho)})
 
-        # En iyi modeli val_MSE'ye göre seç. (Deney bulgusu: val_RHO zirvesi
-        # overfit ediyor — val_mse minimumu test'e daha iyi genelliyor.)
+        # Keep the best model by val_mse. (Experiment: the val_rho peak overfits;
+        # the val_mse minimum generalises better to the test set.)
         if val_mse < best_val - 1e-4:
             best_val = val_mse
             best_rho = rho
@@ -282,7 +280,7 @@ def train(season: str, epochs: int = 100, lr: float = 1e-3, hidden: int = 128, e
         test_mse = torch.nn.functional.mse_loss(preds_test, y[test_idx]).item()
         rho_t = spearmanr(preds_test.cpu().numpy(), y[test_idx].cpu().numpy()).correlation if len(test_idx) > 5 else 0.0
 
-        # Cold-start ayrı raporla: test kenarlarının her iki ucu da train'de yoksa
+        # Report cold-start separately: test edges whose two players are both unseen
         cold_mask = _cold_start_mask(pair_src.cpu(), pair_dst.cpu(),
                                      train_idx.cpu(), test_idx.cpu()).to(device)
         n_cold = int(cold_mask.sum())
@@ -294,7 +292,7 @@ def train(season: str, epochs: int = 100, lr: float = 1e-3, hidden: int = 128, e
             cold_metrics = {"n_edges": n_cold, "mse": cold_mse, "spearman": cold_rho}
             print(f"[cold-start] n={n_cold} mse={cold_mse:.4f} rho={cold_rho:.3f}")
         else:
-            print(f"[cold-start] n={n_cold} — çok az, atlandı")
+            print(f"[cold-start] n={n_cold} — too few, skipped")
 
     out_pt = MODELS_DIR / f"synergy_hgt_{season}.pt"
     torch.save({"state_dict": model.state_dict(),
@@ -317,13 +315,13 @@ if __name__ == "__main__":
     p.add_argument("--epochs", type=int, default=100)
     p.add_argument("--lr", type=float, default=1e-3)
     p.add_argument("--split", choices=["player-disjoint", "random"], default="player-disjoint",
-                   help="player-disjoint: gerçek genelleme; random: eski (leakage'li) baseline")
+                   help="player-disjoint: real generalisation; random: old (leaky) baseline")
     p.add_argument("--edge-dropout", type=float, default=0.0,
-                   help="Train mesaj geçişinde rastgele düşürülen kenar oranı. Bu grafta zararlı (seyrek); >0 deneyseldir.")
+                   help="Share of training edges dropped per epoch in message passing. Hurts on this sparse graph; experimental.")
     p.add_argument("--weighted", action="store_true",
-                   help="MSE'yi sqrt(minutes_together) ile ağırlıkla (gürültülü düşük-dakika çiftlerini kıs)")
+                   help="Weight the MSE by sqrt(minutes_together) (down-weights noisy low-minute pairs)")
     p.add_argument("--rank-weight", type=float, default=0.0,
-                   help="Pairwise ranking loss katsayısı (Spearman surrogate). 0=kapalı")
+                   help="Pairwise ranking loss weight (Spearman surrogate). 0 = off")
     p.add_argument("--weight-decay", type=float, default=1e-4)
     args = p.parse_args()
     train(args.season, epochs=args.epochs, lr=args.lr, split=args.split,

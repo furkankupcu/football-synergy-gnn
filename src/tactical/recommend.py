@@ -1,15 +1,15 @@
-"""Performans-ağırlıklı transfer önerisi — Tactical Lab için.
+"""Performance-weighted transfer suggestions — for the Tactical Lab.
 
-Var olan SynergyEngine'i (`src.graph.recommend`) genişletmek yerine sarıyoruz:
-1. Önce GNN squad-recommend ile pozisyona uygun aday listesini al (esnek pos aile dahil).
-2. Aday havuzu üzerinde 4 bileşenli combined score hesapla:
-   - style_fit       (style_fit modülünden, per-aday)
-   - role_score      (oyuncunun rol-pct × rating, kabaca lig içi 0-100)
-   - gnn_synergy     (yerleşik kadrodaki yerleşik oyuncularla ortalama predict_edge)
-   - position_match  (slot=adayın_pos: 1.0; aynı aile: 0.7; başka: 0.3)
-3. min_minutes hard-filter ile dakika eşiğini geçemeyenleri eler (Batuhan Şen sorunu).
+Wraps the existing SynergyEngine (`src.graph.recommend`) instead of extending it:
+1. Get position-appropriate candidates from the GNN squad-recommend (including the flexible position family).
+2. Compute a 4-part combined score over the candidate pool:
+   - style_fit       (from the style_fit module, per candidate)
+   - role_score      (the player's role pct × rating, roughly 0-100 within the league)
+   - gnn_synergy     (mean predict_edge with the players already placed in the squad)
+   - position_match  (slot = candidate's pos: 1.0; same family: 0.7; other: 0.3)
+3. A hard min_minutes filter drops candidates below the minutes threshold (low-minute players topping the list).
 
-Çıktı, frontend'in 'replacements' kart listesi için doğrudan tüketilebilir.
+The output can be consumed directly by the frontend's 'replacements' card list.
 """
 
 from __future__ import annotations
@@ -23,8 +23,8 @@ import torch
 from src.graph.recommend import SynergyEngine
 
 
-# Pozisyon ailesi — SynergyEngine.POS_FAMILY ile aynı mantık, burada local'e koyup
-# import bağımlılığını sade tutuyoruz.
+# Position family — same logic as SynergyEngine.POS_FAMILY; kept local here
+# to keep the import dependencies simple.
 POS_FAMILY: dict[str, set[str]] = {
     "GK":  {"GK"},
     "RB":  {"RB", "RWB", "RCB"},
@@ -56,7 +56,7 @@ def gnn_synergy_avg(
     cand_pid: str,
     placed_pids: list[str],
 ) -> Optional[float]:
-    """Adayın, yerleşik oyuncularla ortalama predict_edge skoru. None: aday graf'ta yok."""
+    """Candidate's mean predict_edge score with the placed players. None: candidate not in the graph."""
     ai = eng.pid_to_idx.get(cand_pid)
     if ai is None or not placed_pids:
         return None
@@ -79,9 +79,9 @@ def rank_replacements(
     top_k: int = 5,
     exclude_pids: set[str] | None = None,
 ) -> list[dict]:
-    """Slot için en iyi 5 değişimi combined score'a göre döndürür.
+    """Return the best 5 replacements for a slot by combined score.
 
-    candidate_pool: önceden filtrelenmiş aday havuzu (min_minutes, position family vs).
+    candidate_pool: pre-filtered candidate pool (min_minutes, position family etc.).
     """
     w = {"position": 0.20, "style_fit": 0.30, "perf": 0.25, "synergy": 0.25}
     if weights:
@@ -129,13 +129,13 @@ def rank_replacements(
 
 
 def build_why_text(rec: dict, top_contributing: list[dict] | None = None) -> str:
-    """'Neden bu oyuncu' kısa açıklama."""
+    """Short 'why this player' explanation."""
     comps = rec["components"]
     best = max(comps.items(), key=lambda kv: kv[1])
-    label = {"position": "pozisyon eşleşmesi", "style_fit": "stil uyumu",
-             "perf": "lig içi performans", "synergy": "kadro sinerjisi"}.get(best[0], best[0])
+    label = {"position": "position match", "style_fit": "style fit",
+             "perf": "league performance", "synergy": "squad synergy"}.get(best[0], best[0])
     extra = ""
     if top_contributing:
         metrics = ", ".join(c["metric"] for c in top_contributing[:2])
-        extra = f" Güçlü metrikler: {metrics}."
-    return f"En yüksek katkı: {label} ({best[1]:.0%}).{extra}"
+        extra = f" Strong metrics: {metrics}."
+    return f"Biggest contribution: {label} ({best[1]:.0%}).{extra}"

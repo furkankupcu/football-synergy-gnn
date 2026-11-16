@@ -1,6 +1,6 @@
-"""Sinerji-tabanlı kadro tamamlama inference.
+"""Synergy-based squad completion inference.
 
-Kullanım:
+Usage:
     eng = SynergyEngine.load(season="2024-2025")
     recs = eng.recommend_squad(
         formation="4-3-3",
@@ -66,7 +66,7 @@ class SynergyEngine:
         model.load_state_dict(sd)
         return cls(data, model, device=device)
 
-    # Pozisyon "aileleri" — esnek modda aynı ailede çapraz öneri için
+    # Position "families" — for cross-position suggestions in flexible mode
     POS_FAMILY: dict[str, set[str]] = {
         "GK":  {"GK"},
         "RB":  {"RB", "RWB", "RCB"},
@@ -107,12 +107,12 @@ class SynergyEngine:
         else:
             slots = FORMATIONS.get(formation)
             if slots is None:
-                raise ValueError(f"Bilinmeyen formasyon: {formation}. Seçenekler: {list(FORMATIONS)}")
+                raise ValueError(f"Unknown formation: {formation}. Options: {list(FORMATIONS)}")
 
         filled_idx = [self.pid_to_idx[pid] for pid in filled.values() if pid in self.pid_to_idx]
         used = set(filled.values())
 
-        # Pozisyon başına slot sayısını say (örn 3-5-2'de iki ST)
+        # Count slots per position (e.g. two ST in a 3-5-2)
         empty_slots: dict[str, int] = {}
         for s in slots:
             if s in filled:
@@ -134,7 +134,7 @@ class SynergyEngine:
                     scores = self.model.predict_edge(self._emb, src, dst).view(len(candidates), len(filled_idx))
                     total = scores.sum(dim=1)
                 else:
-                    # Dolu oyuncu yoksa — node embedding norm'una göre default sıralama
+                    # No filled players — default ranking by node embedding norm
                     total = self._emb[candidates].norm(dim=1)
 
             top = torch.topk(total, k=min(top_k * n_slots, len(candidates)))

@@ -1,6 +1,6 @@
-"""Streamlit arayüzü — SynergyHGT inference (pitch görselleştirme + dashboard).
+"""Streamlit UI — SynergyHGT inference (pitch visualisation + dashboard).
 
-Çalıştır:
+Run:
     .venv/Scripts/streamlit run app.py
 """
 
@@ -29,7 +29,7 @@ WARN = "#fbbf24"
 TEAM_DOT = "#f97316"
 
 
-# Pozisyonun pitch X/Y'si (mplsoccer: pitch 120×80; X=ileri, Y=sol-sağ)
+# Pitch X/Y per position (mplsoccer: pitch 120×80; X = forward, Y = left-right)
 POS_PITCH_XY: dict[str, tuple[float, float]] = {
     "GK":  (10, 40),
     "RB":  (35, 12),    "RCB": (32, 30),  "LCB": (32, 50),  "LB":  (35, 68),
@@ -92,7 +92,7 @@ def _available_seasons() -> list[str]:
     )
 
 
-@st.cache_resource(show_spinner="Model yükleniyor...")
+@st.cache_resource(show_spinner="Loading model...")
 def load_engine(season: str) -> SynergyEngine:
     return SynergyEngine.load(season=season)
 
@@ -120,15 +120,15 @@ def avg_pos_coverage(_season: str) -> dict:
 def render_pitch(highlight: list[dict] | None = None,
                  candidates: list[dict] | None = None,
                  title: str = "") -> plt.Figure:
-    """highlight: filled anchor oyuncular [{name, pos}]
-       candidates: pozisyona göre öneri başlığı [{pos, n}]"""
+    """highlight: filled anchor players [{name, pos}]
+       candidates: suggestion header per position [{pos, n}]"""
     pitch = Pitch(pitch_type="statsbomb", pitch_color=PITCH_BG,
                   line_color=PITCH_LINE, linewidth=1.2)
     fig, ax = pitch.draw(figsize=(8, 5.4))
     fig.patch.set_facecolor(PITCH_BG)
     ax.set_facecolor(PITCH_BG)
 
-    # Empty slot markers — formasyondaki tüm pozisyonlar
+    # Empty slot markers — every position in the formation
     drawn = set()
     if candidates:
         for c in candidates:
@@ -141,7 +141,7 @@ def render_pitch(highlight: list[dict] | None = None,
             ax.text(xy[0], xy[1], c["pos"], ha="center", va="center",
                     color=ACCENT, fontsize=9, fontweight="bold", zorder=3)
             if c.get("count"):
-                ax.text(xy[0], xy[1] - 7, f"{c['count']} aday",
+                ax.text(xy[0], xy[1] - 7, f"{c['count']} candidates",
                         ha="center", color="#94a3b8", fontsize=7)
 
     # Anchor (filled) players
@@ -163,15 +163,15 @@ def render_pitch(highlight: list[dict] | None = None,
 
 # ----- Pages -----------------------------------------------------------------
 def page_overview(eng: SynergyEngine, season: str):
-    st.subheader("📊 Genel Bakış")
+    st.subheader("📊 Overview")
     df = players_df(eng)
     cov = avg_pos_coverage(season)
 
     c1, c2, c3, c4, c5 = st.columns(5)
-    c1.metric("Sezon", season)
-    c2.metric("Oyuncu", f"{len(df):,}")
-    c3.metric("Takım", f"{df['team'].nunique():,}")
-    c4.metric("Kenar (sinerji)", f"{eng.data['player','teammate','player'].edge_index.shape[1]//2:,}")
+    c1.metric("Season", season)
+    c2.metric("Players", f"{len(df):,}")
+    c3.metric("Teams", f"{df['team'].nunique():,}")
+    c4.metric("Edges (synergy)", f"{eng.data['player','teammate','player'].edge_index.shape[1]//2:,}")
 
     metrics_path = MODELS_DIR / f"metrics_{season}.json"
     if metrics_path.exists():
@@ -181,19 +181,19 @@ def page_overview(eng: SynergyEngine, season: str):
     # Avg_pos coverage banner
     if cov["pct"] < 100:
         st.warning(
-            f"⏳ **Avg-position scrape devam ediyor: {cov['done']:,}/{cov['total']:,} "
-            f"maç ({cov['pct']:.0f}%)** — Bu tamamlanmadan bazı takımlarda detaylı "
-            f"pozisyon (CAM/CDM/LB/RB) yerine kaba (CM/RCB) gözükür.",
+            f"⏳ **Avg-position scrape in progress: {cov['done']:,}/{cov['total']:,} "
+            f"matches ({cov['pct']:.0f}%)** — until it finishes, some teams show coarse "
+            f"positions (CM/RCB) instead of detailed ones (CAM/CDM/LB/RB).",
             icon="⚠️",
         )
 
     col1, col2 = st.columns([2, 3])
     with col1:
-        st.markdown("##### Pozisyon dağılımı")
+        st.markdown("##### Position distribution")
         st.bar_chart(df["position"].value_counts())
     with col2:
-        st.markdown("##### Liga başına oyuncu sayısı")
-        # Lig bilgisini DB'den çek
+        st.markdown("##### Players per league")
+        # Fetch league info from the DB
         league_df = db.read_sql("""
             SELECT m.league, COUNT(DISTINCT p.source_player_id) AS players
             FROM player_stats p
@@ -205,74 +205,74 @@ def page_overview(eng: SynergyEngine, season: str):
 
 
 def page_similar(eng: SynergyEngine):
-    st.subheader("🔍 Benzer Oyuncular")
-    st.caption("Embedding cosine benzerliği — transfer scouting için.")
+    st.subheader("🔍 Similar Players")
+    st.caption("Embedding cosine similarity — for transfer scouting.")
     df = players_df(eng)
 
     cols = st.columns([1, 1, 1, 2])
     with cols[0]:
-        team = st.selectbox("Takım filtresi", ["(tümü)"] + sorted(df["team"].unique()))
+        team = st.selectbox("Team filter", ["(all)"] + sorted(df["team"].unique()))
     with cols[1]:
-        same_pos = st.toggle("Aynı pozisyon", True)
+        same_pos = st.toggle("Same position", True)
     with cols[2]:
-        k = st.slider("Sonuç", 5, 30, 12)
+        k = st.slider("Results", 5, 30, 12)
     with cols[3]:
-        query = st.text_input("🔎 Oyuncu ara",
-                              placeholder="İsim yaz (örn. Aktürkoğlu, Saka)")
+        query = st.text_input("🔎 Search player",
+                              placeholder="Type a name (e.g. Aktürkoğlu, Saka)")
 
-    pool = df if team == "(tümü)" else df[df["team"] == team]
+    pool = df if team == "(all)" else df[df["team"] == team]
     if query.strip():
         pool = pool[pool["player_name"].str.contains(query.strip(), case=False, na=False)]
     pool = pool.sort_values("player_name")
 
     if pool.empty:
-        st.warning("Bu filtrelerde oyuncu yok.")
+        st.warning("No players with these filters.")
         return
 
     label_to_id = {f"{r.player_name} · {r.team} ({r.position})": r.player_id
                    for r in pool.itertuples()}
-    choice = st.selectbox(f"Oyuncu ({len(label_to_id)} sonuç)", list(label_to_id))
+    choice = st.selectbox(f"Player ({len(label_to_id)} results)", list(label_to_id))
     pid = label_to_id[choice]
 
     if st.button("Benzerleri bul", type="primary", use_container_width=True):
         recs = find_similar(eng, pid, k=k, same_position=same_pos)
         if not recs:
-            st.info("Sonuç yok.")
+            st.info("No results.")
             return
         out = pd.DataFrame([{
-            "Skor": round(r.score, 4),
-            "Oyuncu": r.player_name,
-            "Pozisyon": r.position,
-            "Takım": r.team,
+            "Score": round(r.score, 4),
+            "Player": r.player_name,
+            "Position": r.position,
+            "Team": r.team,
         } for r in recs])
         st.dataframe(
             out,
             use_container_width=True,
             hide_index=True,
             column_config={
-                "Skor": st.column_config.ProgressColumn(
-                    "Benzerlik", min_value=0.0, max_value=1.0, format="%.4f"),
+                "Score": st.column_config.ProgressColumn(
+                    "Similarity", min_value=0.0, max_value=1.0, format="%.4f"),
             },
         )
 
 
 def page_squad(eng: SynergyEngine):
-    st.subheader("🧩 Kadro Tamamlama")
-    st.caption("Formasyon + sabit oyuncular → model kalan slotlar için sinerji-maks öneri. "
-               "Anchor için takımdaki **herhangi** bir oyuncuyu seçip, **istediğin pozisyona** yerleştirebilirsin.")
+    st.subheader("🧩 Squad Completion")
+    st.caption("Formation + fixed players → the model suggests synergy-maximising players for the remaining slots. "
+               "You can pick **any** player of the team as an anchor and place them in **any position**.")
 
     df = players_df(eng)
     top_row = st.columns([1, 1, 1, 1])
     with top_row[0]:
-        formation = st.selectbox("Formasyon", list(FORMATIONS), index=0)
+        formation = st.selectbox("Formation", list(FORMATIONS), index=0)
     with top_row[1]:
-        team = st.selectbox("Anchor takım", ["(yok)"] + sorted(df["team"].unique()))
+        team = st.selectbox("Anchor team", ["(none)"] + sorted(df["team"].unique()))
     with top_row[2]:
-        top_k = st.slider("Pozisyon başına öneri", 1, 10, 5)
+        top_k = st.slider("Suggestions per position", 1, 10, 5)
     with top_row[3]:
-        flexible = st.toggle("Esnek pozisyon", value=True,
-                             help="Açıkken bir slot için yakın pozisyon ailesinden de "
-                                  "(örn. CAM slotu için CM/RW/LW/ST) aday gösterilir.")
+        flexible = st.toggle("Flexible positions", value=True,
+                             help="When on, a slot also gets candidates from the nearby position family "
+                                  "(e.g. CM/RW/LW/ST for a CAM slot).")
 
     slots = FORMATIONS[formation]
     pos_counts: dict[str, int] = {}
@@ -281,20 +281,20 @@ def page_squad(eng: SynergyEngine):
 
     left, right = st.columns([3, 4])
 
-    # SOL: esnek anchor seçici — her slot için takımın TÜM oyuncularından seç
+    # LEFT: flexible anchor picker — choose from ALL players of the team for every slot
     filled: dict[str, str] = {}
     with left:
-        st.markdown("##### Anchor oyuncuları (esnek)")
-        if team == "(yok)":
-            st.info("Anchor seçmek için bir takım seçin (sol üst).")
+        st.markdown("##### Anchor players (flexible)")
+        if team == "(none)":
+            st.info("Select a team (top left) to pick anchors.")
         else:
             team_pool = df[df["team"] == team].sort_values("player_name")
             if team_pool.empty:
-                st.warning(f"{team} kadrosu boş.")
+                st.warning(f"{team} squad is empty.")
             else:
                 slot_search = st.text_input(
-                    "🔎 Oyuncu ara (her slot için filtreler)",
-                    placeholder="İsim yaz (örn. Saka, Akturk)",
+                    "🔎 Search player (filters every slot)",
+                    placeholder="Type a name (e.g. Saka, Akturk)",
                     key="slot_search",
                 )
                 already_chosen: set[str] = set()
@@ -305,7 +305,7 @@ def page_squad(eng: SynergyEngine):
                         q = slot_search.strip()
                         suggested = suggested[suggested["player_name"].str.contains(q, case=False, na=False)]
                         others = others[others["player_name"].str.contains(q, case=False, na=False)]
-                    ordered = {"(boş)": None}
+                    ordered = {"(empty)": None}
                     for r in suggested.itertuples():
                         ordered[f"⭐ {r.player_name} [{r.position}]"] = r.player_id
                     for r in others.itertuples():
@@ -315,12 +315,12 @@ def page_squad(eng: SynergyEngine):
                     if pid is not None and pid not in already_chosen:
                         filled[pos] = pid
                         already_chosen.add(pid)
-                st.caption("⭐ = bu pozisyonun gerçek oyuncusu. Diğer oyuncuları da "
-                           "istediğin slota yerleştirebilirsin.")
+                st.caption("⭐ = the actual player for this position. You can also place other players "
+                           "in any slot.")
 
-    # SAĞ: pitch + sonuç
+    # RIGHT: pitch + results
     with right:
-        st.markdown("##### Saha şeması")
+        st.markdown("##### Pitch layout")
         highlight = []
         for pos, pid in filled.items():
             name = df[df["player_id"] == pid]["player_name"].iloc[0]
@@ -328,44 +328,44 @@ def page_squad(eng: SynergyEngine):
         cand_info = [{"pos": p, "count": n} for p, n in pos_counts.items()
                      if p not in filled]
         fig = render_pitch(highlight=highlight, candidates=cand_info,
-                           title=f"{formation} — {team if team!='(yok)' else 'kadro şeması'}")
+                           title=f"{formation} — {team if team!='(none)' else 'squad layout'}")
         st.pyplot(fig, use_container_width=True)
 
     st.divider()
-    if st.button("🔮 Önerileri hesapla", type="primary", use_container_width=True):
-        with st.spinner("Sinerji skorları hesaplanıyor..."):
+    if st.button("🔮 Compute suggestions", type="primary", use_container_width=True):
+        with st.spinner("Computing synergy scores..."):
             recs = eng.recommend_squad(
                 formation=formation, filled=filled,
                 top_k=top_k, flexible_positions=flexible,
             )
         any_rec = any(recs.values())
         if not any_rec:
-            st.warning("Hiç öneri üretilemedi — bu pozisyonlarda oyuncu yok veya hepsi anchor.")
+            st.warning("No suggestions produced — no players in these positions, or all are anchors.")
             return
 
-        # Sonuçları sekmeli göster
+        # Show results in tabs
         empty_positions = [p for p in pos_counts if p not in filled]
-        tabs = st.tabs(empty_positions or ["(hepsi dolu)"])
+        tabs = st.tabs(empty_positions or ["(all filled)"])
         for tab, pos in zip(tabs, empty_positions):
             with tab:
                 lst = recs.get(pos, [])
                 if not lst:
-                    st.info(f"{pos} için aday yok.")
+                    st.info(f"No candidates for {pos}.")
                     continue
                 out = pd.DataFrame([{
-                    "Skor": float(r.score),
-                    "Oyuncu": r.player_name,
-                    "Takım": r.team,
+                    "Score": float(r.score),
+                    "Player": r.player_name,
+                    "Team": r.team,
                 } for r in lst])
                 st.dataframe(
                     out,
                     use_container_width=True,
                     hide_index=True,
                     column_config={
-                        "Skor": st.column_config.ProgressColumn(
-                            "Sinerji",
-                            min_value=float(out["Skor"].min()),
-                            max_value=float(out["Skor"].max()),
+                        "Score": st.column_config.ProgressColumn(
+                            "Synergy",
+                            min_value=float(out["Score"].min()),
+                            max_value=float(out["Score"].max()),
                             format="%.3f",
                         ),
                     },
@@ -373,21 +373,21 @@ def page_squad(eng: SynergyEngine):
 
 
 def page_team_map(eng: SynergyEngine):
-    st.subheader("🗺️ Takım Pozisyon Haritası")
-    st.caption("avg-position verisi olan oyuncular için sahadaki gerçek X/Y konumu.")
+    st.subheader("🗺️ Team Position Map")
+    st.caption("Real on-pitch X/Y position for players with avg-position data.")
 
     df = players_df(eng)
-    team = st.selectbox("Takım", sorted(df["team"].unique()))
+    team = st.selectbox("Team", sorted(df["team"].unique()))
     df_team = df[df["team"] == team]
 
-    # avg_x/avg_y çek
+    # fetch avg_x/avg_y
     ids = [pid.removeprefix("ss_") for pid in df_team["player_id"]]
     if not ids:
-        st.warning("Takım yok.")
+        st.warning("No team.")
         return
     int_ids = [int(x) for x in ids if str(x).isdigit()]
     if not int_ids:
-        st.warning("Geçerli oyuncu ID yok.")
+        st.warning("No valid player IDs.")
         return
     ids_csv = ",".join(str(i) for i in int_ids)
     raw = db.read_sql(f"""
@@ -405,14 +405,14 @@ def page_team_map(eng: SynergyEngine):
     """)
     if raw.empty:
         st.warning(
-            f"{team} için henüz avg-position verisi yok. "
-            "Avg-position scrape bitince burada görünecek."
+            f"No avg-position data for {team} yet. "
+            "It will appear here once the avg-position scrape finishes."
         )
         return
 
-    # Mplsoccer pitch'e koordinatlarını çevir
-    # Koordinat: X 0=kale, 100=rakip; Y 0=sağ, 100=sol
-    # Mplsoccer (statsbomb): X 0=defansif kale, 120=hücum; Y 0=alt, 80=üst
+    # Convert coordinates to the mplsoccer pitch
+    # Coordinates: X 0 = own goal, 100 = opponent; Y 0 = right, 100 = left
+    # Mplsoccer (statsbomb): X 0 = defensive goal, 120 = attack; Y 0 = bottom, 80 = top
     raw["pitch_x"] = raw["x"] / 100 * 120
     raw["pitch_y"] = (100 - raw["y"]) / 100 * 80  # Y flip
 
@@ -427,7 +427,7 @@ def page_team_map(eng: SynergyEngine):
         label = r.name.split()[-1][:10]
         ax.text(r.pitch_x, r.pitch_y + 2.5, label,
                 ha="center", color="white", fontsize=8, zorder=4)
-    ax.set_title(f"{team} — sahada ortalama konum (avg-position scrape)",
+    ax.set_title(f"{team} — average on-pitch position (avg-position scrape)",
                  color=ACCENT, fontsize=11, pad=8)
     st.pyplot(fig, use_container_width=True)
 
@@ -436,18 +436,18 @@ def page_team_map(eng: SynergyEngine):
 def main():
     seasons = _available_seasons()
     if not seasons:
-        st.error("Hiç eğitilmiş model yok. Önce `python -m src.graph.train --season <ss>`.")
+        st.error("No trained model. Run `python -m src.graph.train --season <ss>` first.")
         return
 
     with st.sidebar:
         st.markdown("### ⚽ Football Synergy")
-        st.caption("GNN tabanlı oyuncu sinerji modeli")
-        season = st.selectbox("Sezon", seasons, index=len(seasons) - 1)
+        st.caption("GNN-based player synergy model")
+        season = st.selectbox("Season", seasons, index=len(seasons) - 1)
         st.divider()
         page = st.radio(
-            "Sayfa",
-            ["📊 Genel Bakış", "🔍 Benzer Oyuncular",
-             "🧩 Kadro Tamamlama", "🗺️ Takım Haritası"],
+            "Page",
+            ["📊 Overview", "🔍 Similar Players",
+             "🧩 Squad Completion", "🗺️ Team Map"],
             label_visibility="collapsed",
         )
         st.divider()
@@ -457,11 +457,11 @@ def main():
 
     eng = load_engine(season)
 
-    if page.endswith("Genel Bakış"):
+    if page.endswith("Overview"):
         page_overview(eng, season)
-    elif page.endswith("Benzer Oyuncular"):
+    elif page.endswith("Similar Players"):
         page_similar(eng)
-    elif page.endswith("Kadro Tamamlama"):
+    elif page.endswith("Squad Completion"):
         page_squad(eng)
     else:
         page_team_map(eng)

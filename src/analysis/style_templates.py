@@ -1,10 +1,10 @@
-"""Önceden tanımlı oyun stili şablonları.
+"""Predefined playing-style templates.
 
-Her şablon, `src.analysis.style.STYLE_FEATURES` listesindeki metrikler için
-hedef percentile (0-100) değerleri içerir. Bir takımın bu şablona uyumu,
-`style_fingerprint` çıktısı ile cosine similarity hesaplanarak ölçülür.
+Each template holds target percentiles (0-100) for the metrics in
+`src.analysis.style.STYLE_FEATURES`. A team's fit to a template is measured
+by cosine similarity with its `style_fingerprint` output.
 
-Şablon kullanımı:
+Template usage:
     >>> from src.analysis.style_templates import STYLE_TEMPLATES, get_template_vector
     >>> target = get_template_vector("high-press")
     >>> # target: pd.Series indeksli (feature_name → 0-100 percentile)
@@ -17,13 +17,13 @@ import pandas as pd
 from src.analysis.style import STYLE_FEATURES
 
 
-# Her şablon: STYLE_FEATURES listesindeki kolonlar için hedef percentile (0-100).
-# Yüksek değer = "bu metrikte ligin üst yüzdelerinde olmak istiyoruz".
-# Eksik metrikler 50 (nötr) sayılır.
+# Each template: target percentile (0-100) for the columns in STYLE_FEATURES.
+# High value = "we want to be in the league's top percentiles for this metric".
+# Missing metrics count as 50 (neutral).
 STYLE_TEMPLATES: dict[str, dict] = {
     "high-press": {
-        "label": "Yüksek Pres / Gegenpressing",
-        "description": "Top kaybı sonrası anında geri kazanım, yüksek defansif aksiyon, kısa pas hakimiyeti.",
+        "label": "High Press / Gegenpressing",
+        "description": "Immediate ball recovery after losing it, high defensive activity, short-passing control.",
         "targets": {
             "tackles": 85, "interceptions": 85, "blocks": 75,
             "take_ons_won": 70, "take_ons_attempted": 75,
@@ -33,12 +33,12 @@ STYLE_TEMPLATES: dict[str, dict] = {
             "shots": 70, "shots_on_target": 70,
             "xg": 75, "xg_against": 25,
             "goals_for": 75, "goals_against": 25,
-            "average_shot_distance": 30,  # yakın şutlar
+            "average_shot_distance": 30,  # close-range shots
         },
     },
     "possession": {
-        "label": "Pozisyon Oyunu (Tiki-Taka)",
-        "description": "Yüksek top hakimiyeti, kısa-doğru paslar, sabırlı saha kazanımı.",
+        "label": "Positional Play (Tiki-Taka)",
+        "description": "High possession, short and accurate passing, patient territorial gains.",
         "targets": {
             "possession": 90, "passes_pct": 90,
             "progressive_passes": 80, "progressive_carries": 70,
@@ -52,8 +52,8 @@ STYLE_TEMPLATES: dict[str, dict] = {
         },
     },
     "counter-attack": {
-        "label": "Direkt / Kontra-Atak",
-        "description": "Düşük blok, hızlı geçişler, dikey paslar, az dokunuşla hücum.",
+        "label": "Direct / Counter-Attack",
+        "description": "Low block, fast transitions, vertical passes, attacks with few touches.",
         "targets": {
             "possession": 30, "passes_pct": 60,
             "progressive_passes": 75, "progressive_carries": 80,
@@ -67,8 +67,8 @@ STYLE_TEMPLATES: dict[str, dict] = {
         },
     },
     "defensive-block": {
-        "label": "Defansif Blok",
-        "description": "Kompakt savunma, düşük top hakimiyeti, kalan az gole odaklı yapı.",
+        "label": "Defensive Block",
+        "description": "Compact defence, low possession, built around conceding few goals.",
         "targets": {
             "possession": 25, "passes_pct": 65,
             "progressive_passes": 35, "progressive_carries": 35,
@@ -82,8 +82,8 @@ STYLE_TEMPLATES: dict[str, dict] = {
         },
     },
     "open-game": {
-        "label": "Açık Oyun / Yüksek Skor",
-        "description": "İki tarafa açık karakter, çok şut/xG ama defansif kırılganlık.",
+        "label": "Open Game / High Scoring",
+        "description": "Open at both ends, many shots/xG but defensively fragile.",
         "targets": {
             "possession": 55, "passes_pct": 70,
             "progressive_passes": 75, "progressive_carries": 80,
@@ -100,7 +100,7 @@ STYLE_TEMPLATES: dict[str, dict] = {
 
 
 def list_templates() -> list[dict]:
-    """API için: ID + label + description listesi."""
+    """For the API: list of ID + label + description."""
     return [
         {"id": tid, "label": t["label"], "description": t["description"]}
         for tid, t in STYLE_TEMPLATES.items()
@@ -108,20 +108,20 @@ def list_templates() -> list[dict]:
 
 
 def get_template_vector(template_id: str) -> pd.Series:
-    """Şablon ID → STYLE_FEATURES sırasıyla hedef percentile Series'i.
+    """Template ID → Series of target percentiles in STYLE_FEATURES order.
 
-    Eksik metrikler 50 (nötr) doldurulur.
+    Missing metrics are filled with 50 (neutral).
     """
     if template_id not in STYLE_TEMPLATES:
-        raise ValueError(f"Bilinmeyen şablon: {template_id}")
+        raise ValueError(f"Unknown template: {template_id}")
     tgt = STYLE_TEMPLATES[template_id]["targets"]
     return pd.Series({f: float(tgt.get(f, 50)) for f in STYLE_FEATURES})
 
 
 def parse_style_target(style_target: str | None, team_stats: pd.DataFrame | None = None) -> pd.Series | None:
-    """Genel parser: 'template:high-press' veya 'team:PSG' formatlarını çözer.
+    """General parser: resolves the 'template:high-press' or 'team:PSG' formats.
 
-    None döndürürse hiçbir stil hedefi seçilmemiştir.
+    Returning None means no style target was selected.
     """
     if not style_target:
         return None

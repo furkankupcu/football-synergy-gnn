@@ -78,7 +78,7 @@ def fig_architecture(path: Path = DOCS / "model_architecture.png") -> None:
 
 # --------------------------------------------------------------------------- 2) pipeline
 def fig_pipeline(season: str = "2025-2026", path: Path = DOCS / "pipeline.png") -> None:
-    # Sayılar elle yazılınca bayatlıyordu → mevcut graftan oku
+    # Hand-written numbers went stale → read them from the current graph
     n_nodes = n_tm = n_op = n_feat = "?"
     pt = GRAPH_DIR / f"hetero_{season}.pt"
     if pt.exists():
@@ -132,7 +132,7 @@ def fig_ablation(results: list[dict], path: Path = DOCS / "ablation_metrics.png"
     print(f"saved {path}")
 
 
-# --------------------------------------------------------------------------- 4) eğitim eğrileri
+# --------------------------------------------------------------------------- 4) training curves
 def fig_training_curves(season: str, path: Path = DOCS / "training_curves.png") -> None:
     mfile = MODELS_DIR / f"metrics_{season}.json"
     m = json.loads(mfile.read_text())
@@ -186,7 +186,7 @@ def fig_pred_scatter(season: str, path: Path = DOCS / "pred_vs_actual.png") -> N
     rho = spearmanr(pred, actual).correlation
 
     fig, ax = plt.subplots(figsize=(6.4, 6))
-    # Binlerce üst üste nokta → yoğunluk (hexbin) okunaklı; uç değerler eksen dışı kalsın
+    # Thousands of overlapping points → density (hexbin) is readable; extreme values stay off-axis
     lo, hi = np.percentile(np.r_[actual, pred], [0.5, 99.5])
     hb = ax.hexbin(actual, pred, gridsize=45, extent=(lo, hi, lo, hi), mincnt=1,
                    cmap="Blues", bins="log", linewidths=0)
@@ -204,7 +204,7 @@ def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--season", default="2025-2026")
     ap.add_argument("--ablation-json", default=None,
-                    help="Ablasyon sonuçları JSON (list of {label,test_rho,cold_rho})")
+                    help="Ablation results JSON (list of {label,test_rho,cold_rho})")
     a = ap.parse_args()
 
     fig_architecture()

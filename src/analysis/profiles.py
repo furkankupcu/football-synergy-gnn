@@ -1,8 +1,8 @@
-"""Pozisyon profilleri ve rol-skoru hesabı — tek kaynak.
+"""Position profiles and role-score computation — single source.
 
-Bu modül daha önce hem `src/app/dashboard.py` (Streamlit, kaldırıldı) hem
-`src/api/main.py` içinde duplike haldeydi. Artık her iki taraf da buradan
-import eder.
+This module used to be duplicated in `src/app/dashboard.py` (Streamlit, removed) and
+`src/api/main.py`. Both sides now import it from here.
+
 """
 
 from __future__ import annotations
@@ -188,8 +188,8 @@ PROFILE_GROUPS: dict[str, list[str]] = {
     "Forwards":     ["Playmaker (#10)", "Target Man (#9)", "Poacher", "Pressing Forward"],
 }
 
-# Mevki kodu (G/D/M/F) → tarama rolleri.
-# api/main.py'deki _POS_ROLES ile birebir aynı; tek kaynak burada tutulur.
+# Position code (G/D/M/F) → scouting roles.
+# Identical to _POS_ROLES in api/main.py; the single source lives here.
 POS_ROLES: dict[str, list[str]] = {
     "G": ["Goalkeeper"],
     "D": ["Ball-Playing CB", "Combative CB / Stopper", "Full-Back", "Wing-Back"],
@@ -200,8 +200,8 @@ POS_ROLES: dict[str, list[str]] = {
 POS_REQUIRED: dict[str, int] = {"G": 2, "D": 4, "M": 4, "F": 2}
 
 
-# 11 detaylı pozisyon (GNN coordinate-based taxonomy) → tarama rolleri.
-# src/graph/positions.py ile uyumlu. Web tarafı bu yapıyı kullanmalı.
+# 11 detailed positions (GNN coordinate-based taxonomy) → scouting roles.
+# Consistent with src/graph/positions.py. The web side should use this structure.
 POS_ROLES_DETAILED: dict[str, list[str]] = {
     "GK":  ["Goalkeeper"],
     "RB":  ["Full-Back", "Wing-Back"],
@@ -221,17 +221,17 @@ POS_REQUIRED_DETAILED: dict[str, int] = {
     "CDM": 1, "CM": 2, "CAM": 1, "RW": 2, "LW": 2, "ST": 2,
 }
 
-# Eski G/D/M/F kodundan 11 pozisyona düşürülmüş varsayılan eşleştirme
-# (avg_pos verisi yoksa fallback için)
+# Default mapping from the old G/D/M/F code to the 11 positions
+# (fallback when there is no avg_pos data)
 POS_BASE_TO_DETAILED: dict[str, str] = {
     "G": "GK", "D": "RCB", "M": "CM", "F": "ST",
 }
 
 
 def compute_role_scores(df: pd.DataFrame, met_defs: dict) -> pd.Series:
-    """Pozisyon profilindeki metriklere göre 0-100 arası rol skoru.
+    """0-100 role score from the metrics of the position profile.
 
-    HAM formülü: rol_pct * 0.80 + rating_pct * 0.20, log(matches_played) ağırlıklı.
+    Formula: role_pct * 0.80 + rating_pct * 0.20, weighted by log(matches_played).
     """
     if df.empty:
         return pd.Series(dtype=float)

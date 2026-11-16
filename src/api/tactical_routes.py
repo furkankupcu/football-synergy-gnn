@@ -1,10 +1,10 @@
-"""Tactical Lab analiz endpoint'i.
+"""Tactical Lab analysis endpoint.
 
-POST /tactical/analyze — anchor team + lineup + style hedefi → tam analiz paketi:
+POST /tactical/analyze — anchor team + lineup + style target → full analysis package:
   - team_style_fit (overall %)
-  - per_player_fit (her slot için fit % + metric attribution)
-  - pairwise_synergy (yerleşik oyuncular arası GNN predict_edge)
-  - replacements (her slot için combined-score sıralı top-K transfer önerisi)
+  - per_player_fit (fit % per slot + metric attribution)
+  - pairwise_synergy (GNN predict_edge between the placed players)
+  - replacements (top-K transfer suggestions per slot, sorted by combined score)
 """
 
 from __future__ import annotations
@@ -32,14 +32,14 @@ router = APIRouter(prefix="/tactical", tags=["tactical"])
 
 
 # ------------------------------------------------------------------------
-# Yardımcılar
+# Helpers
 # ------------------------------------------------------------------------
 
 @lru_cache(maxsize=4)
 def _player_pool(season: str) -> pd.DataFrame:
-    """Sezonun tüm oyuncularını per-90 metrikleriyle yükler (cache'li).
+    """Load all players of the season with per-90 metrics (cached).
 
-    Önce information_schema ile mevcut kolonları çözer; eksik metrikleri SELECT'e koymaz.
+    Resolves the existing columns via information_schema first; missing metrics are left out of the SELECT.
     """
     all_metrics = sorted({m for ms in POS_METRICS.values() for (m, _) in ms})
     try:
@@ -64,7 +64,7 @@ def _player_pool(season: str) -> pd.DataFrame:
 
 
 def _team_stats_for_season(season: str) -> pd.DataFrame:
-    """Stil takım-vektörü için takım istatistikleri (match aggregate)."""
+    """Team stats for the style team vector (match aggregate)."""
     try:
         return db.read_sql(f"""
             SELECT * FROM team_stats
@@ -75,7 +75,7 @@ def _team_stats_for_season(season: str) -> pd.DataFrame:
 
 
 def _style_vector(style: dict | None, season: str) -> Optional[pd.Series]:
-    """Style hedefini parse et: {mode: 'template'|'team', target: id|team_name} → percentile vektörü."""
+    """Parse the style target: {mode: 'template'|'team', target: id|team_name} → percentile vector."""
     if not style:
         return None
     mode, target = style.get("mode"), style.get("target")
@@ -98,7 +98,7 @@ def _style_vector(style: dict | None, season: str) -> Optional[pd.Series]:
 
 
 def _pairwise_synergy(eng, placed: list[tuple[str, str]]) -> list[dict]:
-    """placed = [(slot, pid)]; tüm çiftler için predict_edge."""
+    """placed = [(slot, pid)]; predict_edge for every pair."""
     n = len(placed)
     if n < 2:
         return []
@@ -129,7 +129,7 @@ def _pairwise_synergy(eng, placed: list[tuple[str, str]]) -> list[dict]:
 
 @router.post("/analyze")
 def analyze(payload: dict = Body(...)):
-    """Tam stil-odaklı kadro analizi.
+    """Full style-driven squad analysis.
 
     Body:
       {
@@ -145,7 +145,7 @@ def analyze(payload: dict = Body(...)):
     eng = _engine(season)
 
     lineup_raw: dict = payload.get("lineup") or {}
-    # Normalize: 'ss_xxx' → 'ss_xxx' (string); int verilirse de prefixle
+    # Normalise: 'ss_xxx' → 'ss_xxx' (string); ints get the prefix as well
     lineup: dict[str, str] = {}
     for slot, pid in lineup_raw.items():
         if not pid:
@@ -159,16 +159,16 @@ def analyze(payload: dict = Body(...)):
     min_minutes = int(filters.get("min_minutes", 900))
     top_k = int(payload.get("top_k", 5))
 
-    # 1) Stil vektörü
+    # 1) Style vector
     style_vec = _style_vector(payload.get("style"), season)
 
     # 2) Oyuncu havuzu (per-90)
     pool_raw = _player_pool(season)
-    # match-bazlı satırlardan oyuncu başına per-90'a toplu
+    # Aggregate match-level rows to per-90 per player
     all_metrics = sorted({m for ms in POS_METRICS.values() for (m, _) in ms})
     metrics_present = [c for c in all_metrics if c in pool_raw.columns]
     per90 = aggregate_player_metrics(pool_raw, metrics_present) if metrics_present else pd.DataFrame()
-    # Lig içi percentile için aynı havuz (basit; daha doğru: pozisyona göre ayrıştır)
+    # Same pool for league percentiles (simple; more accurate: split by position)
     league_pool = per90
 
     # 3) Per-player fit
@@ -183,29 +183,29 @@ def analyze(payload: dict = Body(...)):
     placed_pairs = [(s, p) for s, p in lineup.items() if p in eng.pid_to_idx]
     pair_syn = _pairwise_synergy(eng, placed_pairs)
 
-    # 5) Replacements: her slot için top-K
-    # Pool'a meta join: oyuncu adı + takım + 11-pos (engine'den)
+    # 5) Replacements: top-K per slot
+    # Join meta onto the pool: player name + team + 11-pos (from the engine)
     if not per90.empty:
         meta = pool_raw.groupby("source_player_id").agg(
             player_name=("player_name", "last"),
             team_name=("team_name", "last"),
         )
         per90 = per90.join(meta, how="left")
-        # 11-pos: GNN engine'in pozisyon haritası (G/D/M/F yerine)
+        # 11-pos: the GNN engine's position map (instead of G/D/M/F)
         eng_pos = {int(pid.replace("ss_", "")): pos
                    for pid, pos in zip(eng.player_ids, eng.positions)
                    if pid.startswith("ss_") and pid[3:].isdigit()}
         per90["position"] = per90.index.map(lambda i: eng_pos.get(int(i)))
 
-    # role_score = kullanıcının kullandığı compute_role_scores; ana per-match df kullanır.
-    # Burada per-90 frame'de tek satır var; pragmatik: rating ortalamasını proxy yapıyoruz.
+    # role_score = the user's compute_role_scores; it uses the main per-match df.
+    # Here the per-90 frame has one row per player; pragmatic: average rating as a proxy.
     try:
         rating_avg = pool_raw.groupby("source_player_id")["rating"].mean()
         per90 = per90.join(rating_avg.rename("rating"), how="left")
     except Exception:
         per90["rating"] = np.nan
 
-    # style_fit: oyuncu başına pozisyonuna en uygun POS_METRICS ile mini-skor
+    # style_fit: per player, a mini score with the POS_METRICS that best fit their position
     style_fit_col = pd.Series(index=per90.index, dtype=float)
     if not per90.empty:
         for spid, row in per90.iterrows():
@@ -227,8 +227,8 @@ def analyze(payload: dict = Body(...)):
                 style_fit_col.at[spid] = float(np.mean(scores))
     per90["style_fit"] = style_fit_col
 
-    # role_score: rating + per90 metriklerinin pozisyon-tipik ağırlıklı percentile'i
-    # Pragmatik: style_fit ile aynı baz + rating normalleştirme
+    # role_score: rating + position-typical weighted percentile of per-90 metrics
+    # Pragmatic: same base as style_fit + rating normalisation
     if "rating" in per90.columns:
         rt = per90["rating"].rank(pct=True) * 100
         per90["role_score"] = (per90["style_fit"].fillna(50) * 0.7 + rt.fillna(50) * 0.3).round(1)
@@ -244,7 +244,7 @@ def analyze(payload: dict = Body(...)):
     placed_pids = set(lineup.values())
     replacements: dict[str, list[dict]] = {}
     for slot, pid in lineup.items():
-        # Aday havuzu: aynı pozisyon ailesi (esnek)
+        # Candidate pool: same position family (flexible)
         allowed = POS_FAMILY.get(slot, {slot})
         cand = eligible[eligible["position"].fillna("").str.upper().isin(allowed)].copy()
         cand = cand[~cand.index.isin([int(p.replace("ss_", "")) for p in placed_pids if p])]

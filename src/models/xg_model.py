@@ -1,4 +1,4 @@
-"""Custom xG modeli — XGBoost classifier, FBref/StatsBomb event data üzerinde eğitim."""
+"""Custom xG model — XGBoost classifier trained on event data."""
 
 import numpy as np
 import pandas as pd
@@ -18,25 +18,25 @@ except ImportError:
 MODEL_PATH = Path("data/db/xg_model.pkl")
 
 FEATURES = [
-    "distance",       # Kaleye mesafe (metre)
-    "angle",          # Kale açısı (derece)
-    "x", "y",         # Şut koordinatı (0-120, 0-80)
-    "body_part",      # Ayak / kafa (encoded)
-    "situation",      # Açık oyun / korner / serbest vuruş (encoded)
-    "technique",      # Normal / volley / chip (encoded)
-    "prev_action",    # Önceki aksiyonun tipi (encoded)
+    "distance",       # distance to goal (metres)
+    "angle",          # goal angle (degrees)
+    "x", "y",         # shot coordinates (0-120, 0-80)
+    "body_part",      # foot / head (encoded)
+    "situation",      # open play / corner / free kick (encoded)
+    "technique",      # normal / volley / chip (encoded)
+    "prev_action",    # type of the previous action (encoded)
 ]
 
 
 def _compute_geometry(shots: pd.DataFrame) -> pd.DataFrame:
-    """Koordinatlardan mesafe ve açı hesaplar (StatsBomb 120x80 sahası)."""
+    """Compute distance and angle from coordinates (StatsBomb 120x80 pitch)."""
     df = shots.copy()
     # Kale merkezi: (120, 40)
     dx = 120 - df["x"].astype(float)
     dy = 40 - df["y"].astype(float)
     df["distance"] = np.sqrt(dx**2 + dy**2)
 
-    # Kale direklerine açı
+    # Angle to the goal posts
     goal_y1, goal_y2 = 36, 44
     a = np.arctan2(goal_y2 - df["y"].astype(float), dx)
     b = np.arctan2(goal_y1 - df["y"].astype(float), dx)
@@ -45,7 +45,7 @@ def _compute_geometry(shots: pd.DataFrame) -> pd.DataFrame:
 
 
 def prepare_features(shots: pd.DataFrame) -> tuple[pd.DataFrame, pd.Series | None]:
-    """Shot event DataFrame'ini model feature'larına çevirir."""
+    """Convert a shot event DataFrame into model features."""
     df = _compute_geometry(shots)
 
     cat_cols = ["body_part", "situation", "technique", "prev_action"]
@@ -69,13 +69,13 @@ def prepare_features(shots: pd.DataFrame) -> tuple[pd.DataFrame, pd.Series | Non
 
 
 def train(shots: pd.DataFrame, save: bool = True) -> object:
-    """XGBoost xG modelini eğitir ve kaydeder."""
+    """Train and save the XGBoost xG model."""
     if not XGB_AVAILABLE:
-        raise ImportError("xgboost kurulu değil: pip install xgboost")
+        raise ImportError("xgboost is not installed: pip install xgboost")
 
     X, y = prepare_features(shots)
     if y is None:
-        raise ValueError("Eğitim verisi 'outcome' veya 'goal' kolonu içermeli.")
+        raise ValueError("Training data must contain an 'outcome' or 'goal' column.")
 
     X_train, X_test, y_train, y_test = train_test_split(
         X, y, test_size=0.2, random_state=42, stratify=y
@@ -108,10 +108,10 @@ def train(shots: pd.DataFrame, save: bool = True) -> object:
 
 
 def predict(shots: pd.DataFrame, model=None) -> pd.Series:
-    """Şut DataFrame'i için xG tahminleri döndürür."""
+    """Return xG predictions for a shot DataFrame."""
     if model is None:
         if not MODEL_PATH.exists():
-            raise FileNotFoundError("Model bulunamadı. Önce train() çalıştırın.")
+            raise FileNotFoundError("Model not found. Run train() first.")
         model = joblib.load(MODEL_PATH)
 
     X, _ = prepare_features(shots)
@@ -120,7 +120,7 @@ def predict(shots: pd.DataFrame, model=None) -> pd.Series:
 
 
 def calibration_check(shots: pd.DataFrame, model=None) -> pd.DataFrame:
-    """Gerçek gol oranı vs. tahmin edilen xG kalibrasyonunu döndürür."""
+    """Return actual goal rate vs predicted xG calibration."""
     xg = predict(shots, model)
     shots = shots.copy()
     shots["xg_pred"] = xg.values

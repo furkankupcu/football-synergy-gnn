@@ -14,7 +14,7 @@ PER90_CANDIDATES = [
 
 
 def add_per90_columns(player_stats: pd.DataFrame, minutes_col: str = "minutes") -> pd.DataFrame:
-    """Tüm sayısal metrikleri per-90 ölçeğine çevirir."""
+    """Convert all numeric metrics to per-90."""
     df = player_stats.copy()
     if minutes_col not in df.columns:
         return df
@@ -30,7 +30,7 @@ def add_per90_columns(player_stats: pd.DataFrame, minutes_col: str = "minutes") 
 
 
 def xg_overperformance(player_stats: pd.DataFrame) -> pd.DataFrame:
-    """Gol - xG farkını hesaplar (yüksek = finisher; düşük = kötü şutçu)."""
+    """Goals − xG difference (high = clinical finisher; low = poor finisher)."""
     df = player_stats.copy()
     if "goals" in df.columns and "xg" in df.columns:
         df["goals_minus_xg"] = pd.to_numeric(df["goals"], errors="coerce") - pd.to_numeric(df["xg"], errors="coerce")
@@ -46,7 +46,7 @@ def top_performers(
     min_minutes: int = 450,
     position_filter: str | None = None,
 ) -> pd.DataFrame:
-    """Belirli bir metriğe göre en iyi oyuncuları sıralar."""
+    """Rank the best players by a given metric."""
     df = player_stats.copy()
     if "minutes" in df.columns:
         df = df[pd.to_numeric(df["minutes"], errors="coerce").fillna(0) >= min_minutes]
@@ -62,7 +62,7 @@ def top_performers(
 
 
 def progressive_action_share(player_stats: pd.DataFrame) -> pd.DataFrame:
-    """Takım içinde progressive paslar ve taşımalarda oyuncu paylarını hesaplar."""
+    """Player shares of the team's progressive passes and carries."""
     df = player_stats.copy()
     if "team" not in df.columns:
         return df
@@ -77,7 +77,7 @@ def progressive_action_share(player_stats: pd.DataFrame) -> pd.DataFrame:
 
 
 def build_player_summary(player_stats: pd.DataFrame) -> pd.DataFrame:
-    """Oyuncu için 360 derece özet — per90 + xG farkları + share metrikleri."""
+    """360-degree player summary — per-90 + xG differences + share metrics."""
     df = add_per90_columns(player_stats)
     df = xg_overperformance(df)
     df = progressive_action_share(df)

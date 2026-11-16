@@ -1,17 +1,17 @@
-"""Per-player stil uyumu — oyuncunun bireysel metrikleri ↔ hedef stil parmak izi.
+"""Per-player style fit — the player's individual metrics ↔ the target style fingerprint.
 
-Yaklaşım:
-1. Hedef stil parmak izi (team-level, percentile 0-100): `STYLE_TEMPLATES` veya referans takım.
-2. Oyuncunun pozisyona uygun ANAHTAR metrikleri lig içinde percentile'a çevrilir.
-3. Her metrik için "yüksek mi olmalı / düşük mü olmalı" yönü stil hedefinden çıkarılır
-   (50'nin üstü → yüksek olmalı, altı → düşük olmalı). Oyuncunun percentile'i bu yöne
-   ne kadar uyuyorsa o kadar puan alır.
-4. Toplam fit % = ortalama metrik-uyum (0-100). Per-metrik attribution: hangi metrikler
-   yüksek katkı verdi (yön + percentile), hangileri zayıf bıraktı.
+Approach:
+1. Target style fingerprint (team-level, percentile 0-100): `STYLE_TEMPLATES` or a reference team.
+2. The player's position-specific KEY metrics are converted to league percentiles.
+3. For each metric the "should be high / should be low" direction comes from the style target
+   (above 50 → should be high, below → should be low). The more the player's percentile
+   follows that direction, the more points it earns.
+4. Total fit % = mean metric fit (0-100). Per-metric attribution: which metrics
+   contributed most (direction + percentile) and which held the score back.
 
-Bu modül takım-level stil çerçevesini per-player bir skora indirgemek için pragmatik bir
-yaklaşım. Saf değil — stil PSG-style ise "tackles yüksek" beklentisi tüm 11 oyuncuya
-genellenmez (CB ↔ ST farklı). Pozisyona-özel metrik haritası bu sorunu çoğunlukla giderir.
+This module is a pragmatic way to reduce a team-level style frame to a per-player score.
+It is not pure — for a PSG-style target, "high tackles" does not generalise to all 11
+players (CB ↔ ST differ). The position-specific metric map mostly solves this.
 """
 
 from __future__ import annotations
@@ -23,11 +23,11 @@ import numpy as np
 import pandas as pd
 
 
-# Pozisyon → "bu oyuncunun stilini belirleyen" per-90 metrikleri.
-# tablo kolonlarına eşlenir (`player_stats`).
-# Her metrik: (kolon_adı, "yüksek_iyi" mı = True / "düşük_iyi" = False)
-# Stil hedefi takım-level olduğundan biz oyuncu için bu metrik setini topluyoruz;
-# yön kararı stil parmak izinden gelir (aşağıya bkz).
+# Position → the per-90 metrics that "define this player's style".
+# Mapped to table columns (`player_stats`).
+# Each metric: (column_name, "high_good" = True / "low_good" = False)
+# The style target is team-level, so we collect this metric set for the player;
+# the direction comes from the style fingerprint (see below).
 POS_METRICS: dict[str, list[tuple[str, str]]] = {
     "GK":  [("saves", "high"), ("punches", "high"), ("good_high_claim", "high"),
             ("accurate_pass", "high"), ("total_long_balls", "neutral"),
@@ -66,17 +66,17 @@ POS_METRICS: dict[str, list[tuple[str, str]]] = {
             ("key_pass", "neutral"), ("ball_recovery", "high")],
 }
 
-# Stil hedefi takım-metrikleri → her birine "bu metrik yüksek olmalı" yönü için
-# oyuncu-metrik ailesi eşleştirmesi. Bir oyuncunun stil-uyumu, kendi pozisyonunun
-# anahtar metriklerinde ALAN-İÇİ percentile'inin, stil hedefinin BU TÜR metriklerde
-# istediği yöne uymasıyla ölçülür.
+# Style-target team metrics → player-metric family for the "this metric should be
+# high" direction. A player's style fit is measured by whether the IN-ROLE percentile
+# of their position's key metrics follows the direction the style target asks for in
+# THIS KIND of metrics.
 STYLE_TO_PLAYER_FAMILY: dict[str, list[str]] = {
-    # ofansif yoğunluk
+    # attacking volume
     "shots": ["total_shots", "on_target_scoring_attempt", "expected_goals", "goals"],
     "shots_on_target": ["on_target_scoring_attempt", "goals"],
     "xg": ["expected_goals"],
     "goals_for": ["goals", "expected_goals"],
-    # yaratıcılık
+    # creativity
     "progressive_passes": ["accurate_pass", "key_pass", "accurate_long_balls"],
     "progressive_carries": ["won_contest", "touches"],
     "passes_into_final_third": ["accurate_pass", "key_pass"],
@@ -94,12 +94,12 @@ STYLE_TO_PLAYER_FAMILY: dict[str, list[str]] = {
     # savunma sonucu
     "goals_against": ["clearance", "blocks", "interceptions"],
     "xg_against": ["clearance", "blocks", "interceptions"],
-    "average_shot_distance": [],  # oyuncu-level karşılığı zayıf, atla
+    "average_shot_distance": [],  # weak player-level equivalent, skip
 }
 
 
 def _per90(df: pd.DataFrame, cols: list[str]) -> pd.DataFrame:
-    """Verili kolonları per-90'a çevirir. minutes_played 0 ise NaN bırakır."""
+    """Convert the given columns to per-90. Leaves NaN where minutes_played is 0."""
     out = df.copy()
     minutes = pd.to_numeric(out.get("minutes_played", 0), errors="coerce").fillna(0)
     safe = minutes.where(minutes > 0)
@@ -113,7 +113,7 @@ def aggregate_player_metrics(
     player_stats: pd.DataFrame,
     metrics: list[str],
 ) -> pd.DataFrame:
-    """match-bazlı satırlardan oyuncu-bazlı toplama: per-90 ortalama.
+    """Aggregate match-level rows per player: per-90 average.
 
     Input: `player_stats` benzeri (match_id, source_player_id, *metric_cols, minutes_played).
     Output: index=source_player_id, columns=metrics + ['minutes', 'matches'].
@@ -132,24 +132,24 @@ def aggregate_player_metrics(
 def style_fit_for_lineup(
     lineup: dict[str, str],            # {slot_pos → source_player_id}
     player_metrics: pd.DataFrame,      # per-90 metrikler, index=source_player_id
-    style_vector: Optional[pd.Series], # team-level percentile hedefi (style_templates)
-    league_pool: pd.DataFrame,         # aynı lig oyuncularının per-90 metrikleri (percentile baz)
+    style_vector: Optional[pd.Series], # team-level percentile target (style_templates)
+    league_pool: pd.DataFrame,         # per-90 metrics of players in the same league (percentile base)
 ) -> dict:
-    """Her oyuncu için stil-uyum skoru + metric attribution üretir.
+    """Style fit score + metric attribution for every player.
 
-    - league_pool: percentile hesabı için kullanılır (pos-filtreli daha doğru olur,
-      şimdilik global lig).
-    - style_vector None ise yalnızca rol-tabanlı fit % döner (her metrik için "yüksek=iyi").
+    - league_pool: used for the percentile computation (position-filtered would be more
+      accurate; global league for now).
+    - If style_vector is None only a role-based fit % is returned ("high = good" for every metric).
     """
     per_player = []
     overall_scores = []
 
     for slot_pos, pid in lineup.items():
-        # ss_ prefix toleransı
+        # tolerate the ss_ prefix
         spid = int(str(pid).replace("ss_", "")) if str(pid).startswith("ss_") else int(pid)
         if spid not in player_metrics.index:
             per_player.append({"slot": slot_pos, "pid": f"ss_{spid}", "fit_pct": None,
-                               "contributing": [], "note": "metrik yok"})
+                               "contributing": [], "note": "no metrics"})
             continue
 
         pos_metrics = POS_METRICS.get(slot_pos.upper(), POS_METRICS.get("CM"))
@@ -166,19 +166,19 @@ def style_fit_for_lineup(
             if len(pool_vals) < 5:
                 continue
             pct = float((pool_vals < val).mean())  # 0..1
-            # stil yön kararı
+            # style direction
             if style_vector is not None:
-                # bu metriğin ait olduğu stil-ailesini bul
+                # find the style family this metric belongs to
                 aligned_dir = _direction_for_metric(col, style_vector)
             else:
                 aligned_dir = "high" if direction != "low" else "low"
-            # uyum: yön + percentile bileşimi
+            # fit: direction + percentile combined
             if aligned_dir == "high":
                 score = pct * 100
             elif aligned_dir == "low":
                 score = (1 - pct) * 100
             else:
-                # neutral → percentile orta noktaya yakın olmak iyi (kötü değil) — 75 sabit
+                # neutral → being near the middle percentile is fine (not bad) — fixed 75
                 score = 70.0
             scores.append(score)
             contribs.append({
@@ -189,7 +189,7 @@ def style_fit_for_lineup(
             })
 
         fit_pct = float(np.mean(scores)) if scores else None
-        # contribs'i etki sırasına göre: en yüksek 3 destek + en düşük 2 zayıflık
+        # contribs by impact: top 3 supports + bottom 2 weaknesses
         contribs_sorted = sorted(contribs, key=lambda x: -x["score"])
         top_pos = contribs_sorted[:3]
         bot = [c for c in reversed(contribs_sorted) if c["score"] < 50][:2]
@@ -208,15 +208,15 @@ def style_fit_for_lineup(
 
 
 def _direction_for_metric(player_col: str, style_vector: pd.Series) -> str:
-    """Bir oyuncu metriği için stil yönünü (yüksek/düşük/neutral) belirler.
+    """Decide the style direction (high/low/neutral) for a player metric.
 
-    Strateji: oyuncu metriğini içeren takım-stil aileleri var mı? Eğer style_vector o
-    aileyi >55 değerlendiriyorsa 'high', <45 ise 'low', arası 'neutral'.
+    Strategy: are there team-style families containing this player metric? If style_vector
+    rates that family >55 → 'high', <45 → 'low', in between → 'neutral'.
     """
-    # ters mapping: player_col → hangi style metrikleri bu metriği "kapsar"
+    # reverse mapping: player_col → which style metrics "cover" this metric
     style_keys = [sk for sk, members in STYLE_TO_PLAYER_FAMILY.items() if player_col in members]
     if not style_keys:
-        return "high"  # bilinmeyen ise yüksek-iyi varsayılan
+        return "high"  # unknown → default high-is-good
     vals = [float(style_vector.get(sk, 50)) for sk in style_keys]
     avg = float(np.mean(vals))
     if avg >= 60:

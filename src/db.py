@@ -1,4 +1,4 @@
-"""PostgreSQL bağlantı yardımcıları — SQLAlchemy + psycopg2."""
+"""PostgreSQL connection helpers — SQLAlchemy + psycopg2."""
 
 import os
 from contextlib import contextmanager
@@ -22,7 +22,7 @@ def get_dsn() -> dict:
 
 
 def get_engine() -> Engine:
-    """SQLAlchemy engine — pandas read_sql/to_sql için."""
+    """SQLAlchemy engine — for pandas read_sql/to_sql."""
     dsn = get_dsn()
     url = (
         f"postgresql+psycopg2://{dsn['user']}:{dsn['password']}"
@@ -33,7 +33,7 @@ def get_engine() -> Engine:
 
 @contextmanager
 def connect():
-    """psycopg2 bağlantısı — context manager olarak."""
+    """psycopg2 connection — as a context manager."""
     conn = psycopg2.connect(**get_dsn())
     try:
         yield conn
@@ -42,7 +42,7 @@ def connect():
 
 
 def read_sql(query: str, params: dict | None = None) -> pd.DataFrame:
-    """SQL sorgusu çalıştır, DataFrame döndür. Param formatı: :name (SQLAlchemy)."""
+    """Run a SQL query and return a DataFrame. Parameter format: :name (SQLAlchemy)."""
     from sqlalchemy import text
     eng = get_engine()
     with eng.connect() as conn:
@@ -66,16 +66,16 @@ def upsert_dataframe(
     delete_first: bool = True,
 ) -> int:
     """
-    DataFrame'i tabloya yazar.
-    delete_first=True ise önce key_cols'a göre eski satırları siler,
-    sonra yeni satırları INSERT eder (basit replace semantiği).
+    Write a DataFrame to a table.
+    If delete_first=True, old rows matching key_cols are deleted first,
+    then the new rows are INSERTed (simple replace semantics).
     """
     if df.empty:
         return 0
 
     eng = get_engine()
 
-    # Tablodaki gerçek kolonları al, DataFrame'i o kolonlara göre filtrele
+    # Take the table's real columns and filter the DataFrame to them
     with connect() as conn:
         cur = conn.cursor()
         cur.execute(f"""
@@ -88,7 +88,7 @@ def upsert_dataframe(
     cols_to_write = [c for c in df.columns if c in table_cols]
     df_filtered = df[cols_to_write].copy()
 
-    # Eski satırları sil
+    # Delete old rows
     if delete_first and key_cols:
         valid_keys = [k for k in key_cols if k in df_filtered.columns]
         if valid_keys:
@@ -108,8 +108,8 @@ def upsert_dataframe(
 
 def ensure_players(df: pd.DataFrame) -> int:
     """
-    DataFrame'deki yeni player_id/player_name çiftlerini `players` tablosuna ekler.
-    player_stats_* tablolarındaki FK constraint için gereklidir.
+    Adds new player_id/player_name pairs from the DataFrame to the `players` table.
+    Required for the FK constraint on the player_stats_* tables.
     """
     if "player_id" not in df.columns:
         return 0
@@ -139,12 +139,12 @@ def ensure_players(df: pd.DataFrame) -> int:
 
 
 # ---------------------------------------------------------------------------
-# Yüksek seviyeli okuma yardımcıları — analiz modülleri için
+# High-level read helpers — for the analysis modules
 # ---------------------------------------------------------------------------
 
 def get_team_stats(league: str | None = None, season: str | None = None) -> pd.DataFrame:
     """
-    Tüm team_stats_* tablolarını team_id+season+league üzerinden JOIN edip döndürür.
+    Joins all team_stats_* tables on team_id+season+league and returns them.
     """
     where = []
     params = {}
@@ -188,7 +188,7 @@ def get_team_stats(league: str | None = None, season: str | None = None) -> pd.D
 
 def get_player_stats(league: str | None = None, season: str | None = None) -> pd.DataFrame:
     """
-    Tüm player_stats_* tablolarını + players + tm_bio'yu birleştirir.
+    Joins all player_stats_* tables + players + tm_bio.
     """
     where = []
     params = {}
@@ -238,7 +238,7 @@ def get_player_stats(league: str | None = None, season: str | None = None) -> pd
     """
     df = read_sql(query, params)
 
-    # Transfermarkt market_value'yu float'a çevir
+    # Convert the Transfermarkt market_value to float
     if "market_value_raw" in df.columns:
         df["market_value"] = df["market_value_raw"].apply(_parse_market_value)
 
@@ -267,10 +267,10 @@ def get_player_stats_from_source(
     season: str | None = None,
 ) -> pd.DataFrame:
     """
-    player_stats → sezon başına kümülatif oyuncu istatistikleri.
-    player_id: 'ss_<source_player_id>' (match_lineups ile uyumlu).
-    season çıktısı: '2025-2026' formatı (match_lineups ile uyumlu).
-    season girişi hem '25/26' hem '2025-2026' formatını kabul eder.
+    player_stats → cumulative player statistics per season.
+    player_id: 'ss_<source_player_id>' (compatible with match_lineups).
+    season output: '2025-2026' format (compatible with match_lineups).
+    season input accepts both '25/26' and '2025-2026'.
     """
     where = []
     params: dict = {}
@@ -353,7 +353,7 @@ def get_player_stats_from_source(
 
 
 def get_available_leagues(season: str | None = None) -> list[str]:
-    """Veritabanındaki mevcut ligleri döndürür."""
+    """Return the leagues available in the database."""
     where = "WHERE season = :season" if season else ""
     query = f"SELECT DISTINCT league FROM team_stats_standard {where} ORDER BY league"
     df = read_sql(query, {"season": season} if season else None)
@@ -361,7 +361,7 @@ def get_available_leagues(season: str | None = None) -> list[str]:
 
 
 def get_available_seasons() -> list[str]:
-    """Veritabanındaki mevcut sezonları döndürür."""
+    """Return the seasons available in the database."""
     query = "SELECT DISTINCT season FROM team_stats_standard ORDER BY season DESC"
     df = read_sql(query)
     return df["season"].tolist()

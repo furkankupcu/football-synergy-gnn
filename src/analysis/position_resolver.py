@@ -1,11 +1,11 @@
-"""Oyuncu → 11 detaylı pozisyon çözümleyicisi (web tarafı için).
+"""Player → 11 detailed positions resolver (for the web side).
 
-GNN tarafıyla aynı mantık:
-  - base_code (G/D/M/F) birincil sınıf
-  - avg-position scrape verisi varsa X/Y ile alt-pozisyon türetilir
-  - yoksa base_code'a default detay atanır
+Same logic as the GNN side:
+  - base_code (G/D/M/F) is the primary class
+  - with avg-position data, the sub-position is derived from X/Y
+  - otherwise base_code gets a default detail
 
-Sonuç: 11 kategoriden biri (GK/RB/LB/RCB/LCB/CDM/CM/CAM/RW/LW/ST).
+Result: one of 11 categories (GK/RB/LB/RCB/LCB/CDM/CM/CAM/RW/LW/ST).
 """
 
 from __future__ import annotations
@@ -28,7 +28,7 @@ _BASE_FALLBACK: dict[str, str] = {
 def get_position_map(season: Optional[str] = None) -> dict[int, str]:
     """source_player_id (int) → 11-pos string.
 
-    Cache key sezona göre. None → tüm sezonlar bir arada (max coverage).
+    Cache key per season. None → all seasons together (max coverage).
     """
     where = ""
     params: dict = {}
@@ -42,7 +42,7 @@ def get_position_map(season: Optional[str] = None) -> dict[int, str]:
         where = "WHERE m.season IN (:s1, :s2)"
         params = {"s1": season, "s2": ss}
 
-    # 1) Avg-position scrape verisi olan oyuncular: koordinat tabanlı
+    # 1) Players with avg-position data: coordinate-based
     sql_avg = f"""
         SELECT a.source_player_id                                  AS pid,
                MAX(a.position_code)                                    AS base_code,
@@ -57,7 +57,7 @@ def get_position_map(season: Optional[str] = None) -> dict[int, str]:
     """
     df_avg = db.read_sql(sql_avg, params)
 
-    # 2) Avg-pos olmayanlar: en çok dakika oynadığı maçtaki base_code
+    # 2) Players without avg-pos: base_code from the match with the most minutes
     sql_base = f"""
         SELECT p.source_player_id AS pid,
                MAX(p.position)        AS base_code
@@ -70,7 +70,7 @@ def get_position_map(season: Optional[str] = None) -> dict[int, str]:
 
     pos_map: dict[int, str] = {}
 
-    # Önce avg verisi olanlar (precise)
+    # Players with avg data first (precise)
     for r in df_avg.itertuples():
         pos_map[int(r.pid)] = coordinate_to_position(r.x, r.y, r.base_code)
 
@@ -87,9 +87,9 @@ def apply_resolved_position(df: pd.DataFrame,
                             id_col: str = "source_player_id",
                             pos_col: str = "position",
                             season: Optional[str] = None) -> pd.DataFrame:
-    """DataFrame'in `position` kolonunu 11-pozisyon string'i ile değiştirir.
+    """Replace the DataFrame's `position` column with the 11-position string.
 
-    Var olmayan eşleşmelerde mevcut değeri korur.
+    Keeps the existing value where there is no match.
     """
     if df is None or df.empty:
         return df

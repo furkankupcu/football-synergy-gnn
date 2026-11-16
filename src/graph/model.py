@@ -1,13 +1,13 @@
 """SynergyHGT — Heterogeneous Graph Transformer + edge regressor.
 
-İki oyuncunun embedding'lerinden hedef değişkeni (uplift veya joint) tahmin eder.
+Predicts the target (uplift or joint) from the embeddings of two players.
 
-Faz 1.4 ek: takım ve lig için öğrenilebilir embedding'ler giriş özniteliği ile
-concat edilir. Bu sayede "aynı takımdaymış" / "aynı ligdeymiş" bias'ı ayrı bir
-kanalda öğrenilir; geriye kalan sinerji embedding'i bu kanaldan arınır.
+Phase 1.4 addition: learned team and league embeddings are concatenated with the input
+features. The "same team" / "same league" bias is learned in a separate channel, so the
+remaining synergy embedding is cleaned of it.
 
-Cold-start desteği: yeni oyuncu için sadece node feature'lardan + team/league
-embedding'lerinden embedding üretilir (mesaj geçişi kenarı olmasa bile).
+Cold-start support: a new player gets an embedding from node features + team/league
+embeddings alone (even without any message-passing edge).
 """
 
 from __future__ import annotations

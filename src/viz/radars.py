@@ -1,4 +1,4 @@
-"""Radar chart görselleştirmeleri — oyuncu ve takım karşılaştırmaları (mplsoccer)."""
+"""Radar charts — player and team comparisons (mplsoccer)."""
 
 import numpy as np
 import pandas as pd
@@ -13,9 +13,9 @@ PLAYER_RADAR_PARAMS = [
 ]
 
 PLAYER_RADAR_LABELS = [
-    "Goller", "Asistler", "xG", "xA",
-    "Prog. Paslar", "Prog. Taşıma",
-    "Top Kapma", "Top Kesme",
+    "Goals", "Assists", "xG", "xA",
+    "Prog. Passes", "Prog. Carries",
+    "Tackles", "Interceptions",
 ]
 
 TEAM_RADAR_PARAMS = [
@@ -26,10 +26,10 @@ TEAM_RADAR_PARAMS = [
 ]
 
 TEAM_RADAR_LABELS = [
-    "xG", "xGA", "Top Hakimiyeti",
-    "Prog. Paslar", "Prog. Taşıma",
-    "Şutlar", "İsabetli Şutlar", "Pas %",
-    "Top Kapma", "Top Kesme",
+    "xG", "xGA", "Possession",
+    "Prog. Passes", "Prog. Carries",
+    "Shots", "Shots on Target", "Pass %",
+    "Tackles", "Interceptions",
 ]
 
 
@@ -41,7 +41,7 @@ def _percentile_radar(
     color: str = "#4fc3f7",
     figsize: tuple = (8, 8),
 ) -> plt.Figure:
-    """Temel percentile radar chart çizer (mplsoccer olmadan fallback)."""
+    """Draw a basic percentile radar chart (fallback without mplsoccer)."""
     fig, ax = plt.subplots(figsize=figsize, subplot_kw={"projection": "polar"})
     fig.set_facecolor("#1a1a2e")
     ax.set_facecolor("#1a1a2e")
@@ -73,7 +73,7 @@ def player_radar(
     labels: list[str] | None = None,
     color: str = "#4fc3f7",
 ) -> plt.Figure:
-    """Oyuncu için percentile bazlı radar chart."""
+    """Percentile radar chart for a player."""
     params = params or PLAYER_RADAR_PARAMS
     labels = labels or PLAYER_RADAR_LABELS
 
@@ -83,7 +83,7 @@ def player_radar(
 
     if not params:
         fig, ax = plt.subplots()
-        ax.text(0.5, 0.5, "Yeterli veri yok", ha="center", va="center")
+        ax.text(0.5, 0.5, "Not enough data", ha="center", va="center")
         return fig
 
     X = player_stats[params].apply(pd.to_numeric, errors="coerce").fillna(0)
@@ -91,7 +91,7 @@ def player_radar(
 
     mask = player_stats["player"] == player_name
     if not mask.any():
-        raise ValueError(f"Oyuncu bulunamadı: {player_name}")
+        raise ValueError(f"Player not found: {player_name}")
 
     values = percentiles[mask].iloc[0].values
     return _percentile_radar(values, params, labels, player_name, color)
@@ -105,7 +105,7 @@ def team_radar(
     labels: list[str] | None = None,
     color: str = "#ff9800",
 ) -> plt.Figure:
-    """Takım için percentile bazlı radar chart."""
+    """Percentile radar chart for a team."""
     params = params or TEAM_RADAR_PARAMS
     labels = labels or TEAM_RADAR_LABELS
 
@@ -114,7 +114,7 @@ def team_radar(
     params = available
 
     if not params:
-        raise ValueError("Yeterli takım metriği yok.")
+        raise ValueError("Not enough team metrics.")
 
     if name_col in team_stats.columns:
         mask = team_stats[name_col] == team_name
@@ -122,7 +122,7 @@ def team_radar(
         mask = team_stats.index == team_name
 
     if not mask.any():
-        raise ValueError(f"Takım bulunamadı: {team_name}")
+        raise ValueError(f"Team not found: {team_name}")
 
     X = team_stats[params].apply(pd.to_numeric, errors="coerce").fillna(0)
     percentiles = X.rank(pct=True) * 100
@@ -138,7 +138,7 @@ def comparison_radar(
     labels: list[str] | None = None,
     colors: list[str] | None = None,
 ) -> plt.Figure:
-    """İki veya daha fazla oyuncu/takımı tek radar chart'ta karşılaştırır."""
+    """Compare two or more players/teams on one radar chart."""
     params = params or PLAYER_RADAR_PARAMS
     labels = labels or PLAYER_RADAR_LABELS
     colors = colors or ["#4fc3f7", "#f44336", "#4caf50", "#ff9800"]
@@ -172,5 +172,5 @@ def comparison_radar(
     ax.set_ylim(0, 100)
     ax.yaxis.grid(True, color="#333355", linestyle="--", alpha=0.5)
     ax.legend(facecolor="#1a1a2e", edgecolor="white", labelcolor="white", loc="upper right")
-    ax.set_title("Karşılaştırma", color="white", fontsize=14, pad=20, y=1.1)
+    ax.set_title("Comparison", color="white", fontsize=14, pad=20, y=1.1)
     return fig

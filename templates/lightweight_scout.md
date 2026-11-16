@@ -1,29 +1,29 @@
 # Lightweight Scout — [TEAM] (X thread format)
 
-> **Kullanım:** R32 mid-tier rakipler için yarım sayfa not + 5-6 tweet'lik thread. Yayın hedefi: X (Twitter). 1.5 saatte biter.
-> Tam scout report değil — sadece kritik bilgi.
+> **Usage:** half-page note + a 5-6 tweet thread for mid-tier R32 opponents. Target: X (Twitter). Takes about 1.5 hours.
+> Not a full scout report — critical information only.
 
 ---
 
 ## Meta
 
-- **Takım:** [TEAM]
-- **Grup:** [X] — [diğer 3 takım]
+- **Team:** [TEAM]
+- **Group:** [X] — [the other 3 teams]
 - **Coach:** [Name]
-- **Likely R32 path:** [D1 vs ? veya D2 vs ?]
-- **Inceledim:** Son 2-3 maç (CONCACAF/UEFA/AFC/CONMEBOL elemeleri)
+- **Likely R32 path:** [D1 vs ? or D2 vs ?]
+- **Watched:** last 2-3 matches (CONCACAF/UEFA/AFC/CONMEBOL qualifiers)
 
 ---
 
-## Hızlı Profil (3 madde)
+## Quick Profile (3 points)
 
-1. **Identity:** [bir cümle — sistem + temel oyun fikri]
-2. **Star player:** [isim, pozisyon, neden önemli]
-3. **Weakness:** [bir cümle — Türkiye'nin sömürebileceği yer]
+1. **Identity:** [one sentence — system + core idea of play]
+2. **Star player:** [name, position, why they matter]
+3. **Weakness:** [one sentence — where Türkiye can exploit them]
 
 ---
 
-## X Thread Draft (5-6 tweet)
+## X Thread Draft (5-6 tweets)
 
 **Tweet 1 — Hook**
 > 🇨🇭 [TEAM] for #WC2026 — quick scout note before Round of 32 scenarios fire up.
@@ -34,23 +34,23 @@
 > Coach [X] sets up in [formation]. Build-up: [short / direct / mixed]. Press: [high / mid-block / passive].
 > Last 3 matches: [W/D/L sequence], goals [X-Y].
 > 
-> [maç sonuçları kısa]
+> [short match results]
 
 **Tweet 3 — Star player**
 > Player to watch: [NAME] ([pos], [club]).
-> Why: [bir cümle — örn. "elite progressive carrying from deep, 8.3 passes into final 3rd per 90"].
+> Why: [one sentence — e.g. "elite progressive carrying from deep, 8.3 passes into final 3rd per 90"].
 > 
-> [varsa görsel: heatmap]
+> [visual if available: heatmap]
 
 **Tweet 4 — Strength**
-> Their best phase: [örn. "transitions through right channel — [NAME] + [NAME] combo is lethal"].
+> Their best phase: [e.g. "transitions through right channel — [NAME] + [NAME] combo is lethal"].
 > 
-> Set pieces: [direkt vuruşçu / dönüş köşesi / yüksek post]
+> Set pieces: [direct free-kick taker / near-post routine / tall back-post target]
 
-**Tweet 5 — Türkiye için ne anlama geliyor**
-> If Türkiye meet them in R32: [bir cümle — örn. "we'd need to handle their wide rotations and accept ceding possession in midfield"].
+**Tweet 5 — What it means for Türkiye**
+> If Türkiye meet them in R32: [one sentence — e.g. "we'd need to handle their wide rotations and accept ceding possession in midfield"].
 > 
-> Vulnerable zone: [örn. "central defenders in 1v1 vs pace"]
+> Vulnerable zone: [e.g. "central defenders in 1v1 vs pace"]
 
 **Tweet 6 — Closer**
 > Quick verdict: [W likely / 50-50 / tough out].
@@ -61,9 +61,9 @@
 
 ---
 
-## İç notlar (yayınlamadan kontrol et)
+## Internal notes (check before publishing)
 
-- [ ] Tüm rakamlar doğrulanmış mı? (FBref + en az 1 başka)
-- [ ] Oyuncu isimleri Türkçe karakterli mi yazılmış?
-- [ ] Hashtag'ler: #WC2026 #ScoutReport #[TeamName]
-- [ ] Thread bittikten sonra repost yapılır mı?
+- [ ] Are all numbers verified? (FBref + at least one other source)
+- [ ] Are player names written with the correct native characters?
+- [ ] Hashtags: #WC2026 #ScoutReport #[TeamName]
+- [ ] Repost once the thread is finished?

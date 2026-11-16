@@ -1,4 +1,4 @@
-"""Maç sonucu tahmini — LightGBM multi-class classifier."""
+"""Match outcome prediction — LightGBM multi-class classifier."""
 
 import numpy as np
 import pandas as pd
@@ -19,13 +19,13 @@ MODEL_PATH = Path("data/db/match_predictor.pkl")
 OUTCOME_MAP = {1: "home_win", 0: "draw", -1: "away_win"}
 
 FEATURES = [
-    "home_xg_avg5",      # Son 5 maç ev sahibi xG ortalaması
-    "away_xg_avg5",      # Son 5 maç deplasman xG ortalaması
-    "home_xga_avg5",     # Son 5 maç ev sahibi xGA ortalaması
+    "home_xg_avg5",      # home team xG average, last 5 matches
+    "away_xg_avg5",      # away team xG average, last 5 matches
+    "home_xga_avg5",     # home team xGA average, last 5 matches
     "away_xga_avg5",
-    "home_ppda_avg5",    # Son 5 maç ev sahibi PPDA ortalaması
+    "home_ppda_avg5",    # home team PPDA average, last 5 matches
     "away_ppda_avg5",
-    "home_form5",        # Son 5 maç puan toplamı (W=3, D=1, L=0)
+    "home_form5",        # points in the last 5 matches (W=3, D=1, L=0)
     "away_form5",
     "home_advantage",    # 1 = ev sahibi
 ]
@@ -41,9 +41,9 @@ def build_match_features(
     team_stats: pd.DataFrame,
 ) -> pd.DataFrame:
     """
-    Fikstür ve takım stats'tan maç bazlı feature DataFrame'i oluşturur.
+    Build a match-level feature DataFrame from fixtures and team stats.
     fixtures: ['date','home_team','away_team','home_goals','away_goals','home_xg','away_xg']
-    team_stats: ['team','xg','xga','ppda'] içermeli.
+    team_stats: must contain ['team','xg','xga','ppda'].
     """
     fixtures = fixtures.sort_values("date").copy()
     rows = []
@@ -94,11 +94,11 @@ def build_match_features(
 
 
 def train(match_features: pd.DataFrame, save: bool = True) -> object:
-    """LightGBM maç tahmin modelini eğitir."""
+    """Train the LightGBM match prediction model."""
     if not LGB_AVAILABLE:
-        raise ImportError("lightgbm kurulu değil: pip install lightgbm")
+        raise ImportError("lightgbm is not installed: pip install lightgbm")
     if "outcome" not in match_features.columns:
-        raise ValueError("DataFrame 'outcome' kolonu içermeli.")
+        raise ValueError("The DataFrame must contain an 'outcome' column.")
 
     df = match_features.dropna(subset=FEATURES + ["outcome"])
     X = df[FEATURES].fillna(df[FEATURES].median())
@@ -132,10 +132,10 @@ def train(match_features: pd.DataFrame, save: bool = True) -> object:
 
 
 def predict(match_features: pd.DataFrame, model=None) -> pd.DataFrame:
-    """Fixture DataFrame'i için sonuç olasılıklarını döndürür."""
+    """Return outcome probabilities for a fixture DataFrame."""
     if model is None:
         if not MODEL_PATH.exists():
-            raise FileNotFoundError("Model bulunamadı. Önce train() çalıştırın.")
+            raise FileNotFoundError("Model not found. Run train() first.")
         model = joblib.load(MODEL_PATH)
 
     X = match_features[[f for f in FEATURES if f in match_features.columns]].fillna(0)

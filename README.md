@@ -45,6 +45,29 @@ Season 2025/26 · 9 leagues · 4,962 players · 43.3k teammate and 151k opponent
 
 ![Predicted vs actual](docs/pred_vs_actual.png)
 
+### Out-of-season test: does it hold up next season?
+
+The model trained on 2025/26 was used, unchanged, to predict the synergy of teammate pairs in
+the **2026/27** season and compared with what those pairs actually produced. It is compared
+with a non-GNN baseline: the mean 2025/26 uplift of each player's partnerships, summed.
+
+![Out-of-season test](docs/temporal_test.png)
+
+| 2026/27 pairs | Shared minutes | n | SynergyHGT ρ | Player-mean baseline ρ |
+|---|---|---:|---:|---:|
+| **New pairs** (never teammates in 2025/26) | ≥ 90 | 3,283 | **0.32** | 0.23 |
+| New pairs | ≥ 270 | 615 | **0.49** | 0.34 |
+| Repeat pairs | ≥ 90 | 5,620 | **0.37** | 0.27 (last season's own uplift: 0.20) |
+
+New pairs are the scouting case: transfers and new combinations. The margin over the baseline
+holds under bootstrap resampling (95 % interval of the difference: +0.06 to +0.12 at ≥ 90 min,
++0.09 to +0.21 at ≥ 270 min). A pair's own uplift last season is a *weaker* predictor than the
+model, because a single season's uplift is noisy.
+
+> **Preliminary.** The 2026/27 data covers the first weeks of the season only (333 matches up to
+> 2026-09-12; median 182 shared minutes per pair). 67 % of 2026/27 pairs can be scored; the rest
+> involve a player who was not in the 2025/26 graph. Numbers will be updated as the season goes on.
+
 Every change was tested one variable at a time — see [`docs/EXPERIMENT_LOG.md`](docs/EXPERIMENT_LOG.md).
 The full technical write-up is in [`MODEL.md`](MODEL.md).
 
@@ -112,6 +135,7 @@ uvicorn src.api.main:app --reload
 
 python -m docs.gen_model_figs     # refresh figures
 python -m docs.gen_hero           # hero image (team and season as arguments)
+python -m src.graph.evaluate_temporal --train 2025-2026 --test 2026-2027   # out-of-season test
 python -m pytest tests
 ```
 

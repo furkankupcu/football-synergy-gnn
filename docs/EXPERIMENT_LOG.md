@@ -56,6 +56,18 @@ cold-start ρ (0.3878 → 0.4021).
 Configurations were **not** chosen on test ρ: picking the best of ten on the test set would
 turn it into a validation set.
 
+## Out-of-season test — 2025-2026 model on 2026-2027 pairs (2026-11-16, preliminary)
+
+No training change; a new evaluation. 333 matches of 2026-2027, 8,903 scoreable pairs (67 %).
+
+| Pairs (≥ 90 min) | n | SynergyHGT ρ | player-mean ρ | persistence ρ |
+|---|---:|---:|---:|---:|
+| new | 3,283 | 0.318 | 0.230 | – |
+| repeat | 5,620 | 0.374 | 0.274 | 0.198 |
+
+Advantage over the player-mean baseline on new pairs: bootstrap 95 % [+0.062, +0.115].
+Re-run with `python -m src.graph.evaluate_temporal` as more 2026-2027 matches come in.
+
 ## Next single-variable experiments (not run yet)
 
 weight-decay sweep · hidden/output size · 1 vs 3 HGT layers · xG+xA-based uplift (less noisy than goals+assists).

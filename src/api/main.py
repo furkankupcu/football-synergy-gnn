@@ -1,6 +1,6 @@
-"""FastAPI — veri arayüzü.
+"""FastAPI — match data API.
 
-Çalıştırmak için:
+To run:
     uvicorn src.api.main:app --reload
 """
 
@@ -22,7 +22,7 @@ from src import db
 
 
 def _to_python(v: Any) -> Any:
-    """numpy / pandas / datetime türlerini JSON-serializable Python türlerine dönüştürür."""
+    """Convert numpy / pandas / datetime types into JSON-serialisable Python types."""
     if v is None:
         return None
     if isinstance(v, (bool, np.bool_)):
@@ -44,7 +44,7 @@ import json as _json_mod
 
 
 class _SafeJSONResponse(JSONResponse):
-    """numpy/date türlerini güvenle serialize eden JSONResponse."""
+    """JSONResponse that safely serialises numpy/date types."""
 
     def render(self, content: Any) -> bytes:
         class _Enc(_json_mod.JSONEncoder):
@@ -56,7 +56,7 @@ class _SafeJSONResponse(JSONResponse):
 
 app = FastAPI(
     title="Footscrapping API",
-    description="Maç, oyuncu, şut ve takım istatistikleri",
+    description="match, player, shot and team statistics",
     version="1.0.0",
     default_response_class=_SafeJSONResponse,
 )
@@ -84,7 +84,7 @@ def _df_to_list(df: pd.DataFrame) -> list[dict]:
 
 
 # ---------------------------------------------------------------------------
-# Sağlık kontrolü
+# Health check
 # ---------------------------------------------------------------------------
 
 @app.get("/", include_in_schema=False)
@@ -103,17 +103,17 @@ def health():
 
 
 # ---------------------------------------------------------------------------
-# Maçlar
+# Matches
 # ---------------------------------------------------------------------------
 
 @app.get("/matches", tags=["matches"])
 def list_matches(
-    league: Optional[str] = Query(None, description="Örn: 'Turkiye Super Lig'"),
-    season: Optional[str] = Query(None, description="Örn: '25/26'"),
+    league: Optional[str] = Query(None, description="e.g. 'Turkiye Super Lig'"),
+    season: Optional[str] = Query(None, description="e.g. '25/26'"),
     round: Optional[int] = Query(None),
     date_from: Optional[date] = Query(None),
     date_to: Optional[date] = Query(None),
-    team: Optional[str] = Query(None, description="Ev sahibi veya deplasman takım adı (kısmi eşleşme)"),
+    team: Optional[str] = Query(None, description="Home or away team name (partial match)"),
     has_xg: Optional[bool] = Query(None),
     limit: int = Query(50, ge=1, le=500),
     offset: int = Query(0, ge=0),
@@ -174,7 +174,7 @@ def get_match(match_id: str):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
     if df.empty:
-        raise HTTPException(status_code=404, detail="Maç bulunamadı")
+        raise HTTPException(status_code=404, detail="Match not found")
     return _df_to_list(df)[0]
 
 
@@ -238,9 +238,9 @@ def match_team_stats(match_id: str, period: Optional[str] = Query(None, descript
 
 @app.get("/players", tags=["players"])
 def list_players(
-    name: Optional[str] = Query(None, description="Oyuncu adı (kısmi eşleşme)"),
+    name: Optional[str] = Query(None, description="Player name (partial match)"),
     team_name: Optional[str] = Query(None),
-    position: Optional[str] = Query(None, description="Pozisyon (GK/RB/LB/RCB/LCB/CDM/CM/CAM/RW/LW/ST) veya base G/D/M/F"),
+    position: Optional[str] = Query(None, description="Position (GK/RB/LB/RCB/LCB/CDM/CM/CAM/RW/LW/ST) or base G/D/M/F"),
     limit: int = Query(50, ge=1, le=200),
 ):
     filters = []
@@ -248,8 +248,8 @@ def list_players(
 
     pos_upper = position.upper() if position else None
     detailed_pos = pos_upper if pos_upper in _POS_REQUIRED else None
-    # Detayli pozisyon → SQL'de base code'larla pre-filter (havuzu daraltır,
-    # ORDER BY total_goals'in forward'lara yanlı kırpmasını engeller)
+    # Detailed position → pre-filter by base codes in SQL (narrows the pool and keeps
+    # ORDER BY total_goals from truncating in favour of forwards)
     _DETAIL_TO_BASES = {
         "GK":  ["G"],
         "RB":  ["D"], "LB":  ["D"], "RCB": ["D"], "LCB": ["D"],
@@ -275,7 +275,7 @@ def list_players(
                 params[f"pb{i}"] = b
 
     where = ("WHERE " + " AND ".join(filters)) if filters else ""
-    # Detayli pozisyon filtresi sonra Python'da kırpılır → SQL'de geniş tut
+    # The detailed position filter is applied later in Python → keep the SQL wide
     params["limit"] = max(limit * 10, 200) if detailed_pos else limit
 
     query = f"""
@@ -336,7 +336,7 @@ def get_player(player_id: int):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
     if summary_df.empty:
-        raise HTTPException(status_code=404, detail="Oyuncu bulunamadı")
+        raise HTTPException(status_code=404, detail="Player not found")
 
     try:
         matches_df = db.read_sql(
@@ -372,7 +372,7 @@ def player_shots(player_id: int):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
     if name_df.empty:
-        raise HTTPException(status_code=404, detail="Oyuncu bulunamadı")
+        raise HTTPException(status_code=404, detail="Player not found")
 
     player_name = name_df.iloc[0]["player_name"]
     try:
@@ -386,7 +386,7 @@ def player_shots(player_id: int):
 
 
 # ---------------------------------------------------------------------------
-# Takımlar
+# Teams
 # ---------------------------------------------------------------------------
 
 @app.get("/teams", tags=["teams"])
@@ -444,7 +444,7 @@ def get_team(team_id: int, season: Optional[str] = None):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
     if matches_df.empty:
-        raise HTTPException(status_code=404, detail="Takım bulunamadı")
+        raise HTTPException(status_code=404, detail="Team not found")
 
     try:
         stats_df = db.read_sql(
@@ -477,7 +477,7 @@ def get_team(team_id: int, season: Optional[str] = None):
 
 
 # ---------------------------------------------------------------------------
-# Özet istatistikler
+# Summary statistics
 # ---------------------------------------------------------------------------
 
 @app.get("/stats/summary", tags=["stats"])
@@ -568,7 +568,7 @@ def top_scorers(
 def top_ratings(
     league: Optional[str] = None,
     season: Optional[str] = None,
-    min_matches: int = Query(5, description="Minimum maç sayısı"),
+    min_matches: int = Query(5, description="Minimum number of matches"),
     limit: int = Query(20, ge=1, le=100),
 ):
     filters = []
@@ -616,7 +616,7 @@ def _safe_pct(num: pd.Series, den: pd.Series) -> pd.Series:
 
 
 def _add_derived(df: pd.DataFrame) -> pd.DataFrame:
-    """Türetilmiş sütunlar ve p90 dönüşümü."""
+    """Derived columns and per-90 conversion."""
     if df.empty:
         return df
     df = df.copy()
@@ -693,7 +693,7 @@ def standings(
 
 
 # ---------------------------------------------------------------------------
-# Takım gelişmiş istatistikler (puan durumu + taktik)
+# Team advanced stats (standings + tactics)
 # ---------------------------------------------------------------------------
 
 @app.get("/stats/team-advanced", tags=["stats"])
@@ -758,7 +758,7 @@ def team_advanced(
 
 
 # ---------------------------------------------------------------------------
-# Takım xG vs Gerçek Gol (scatter verisi)
+# Team xG vs actual goals (scatter data)
 # ---------------------------------------------------------------------------
 
 @app.get("/stats/team-xg", tags=["stats"])
@@ -798,7 +798,7 @@ def team_xg_scatter(
 
 
 # ---------------------------------------------------------------------------
-# Oyuncu gelişmiş istatistikler (tüm türetilmiş + p90 sütunlar)
+# Player advanced stats (all derived + per-90 columns)
 # ---------------------------------------------------------------------------
 
 @app.get("/stats/player-advanced", tags=["stats"])
@@ -909,10 +909,10 @@ def list_seasons():
 @app.get("/reports/team/{team_name}/pdf", tags=["reports"])
 def team_report_pdf(
     team_name: str,
-    season: Optional[str] = Query(None, description="Örn: 25/26"),
-    opponent: Optional[str] = Query(None, description="H2H rakip takım adı"),
-    include_players: bool = Query(False, description="Oyuncu detay sayfaları eklensin mi"),
-    style_target: Optional[str] = Query(None, description="template:high-press veya team:PSG"),
+    season: Optional[str] = Query(None, description="e.g. 25/26"),
+    opponent: Optional[str] = Query(None, description="Head-to-head opponent team name"),
+    include_players: bool = Query(False, description="Include player detail pages"),
+    style_target: Optional[str] = Query(None, description="template:high-press or team:PSG"),
 ):
     from src.api.report_generator import generate_team_report
     try:
@@ -935,7 +935,7 @@ def team_report_preview(
     team_name: str,
     season: Optional[str] = Query(None),
 ):
-    """PDF sayfalarını base64 PNG olarak döner (tarayıcıda önizleme)."""
+    """Return PDF pages as base64 PNGs (in-browser preview)."""
     import tempfile, subprocess, sys
     from src.api.report_generator import generate_team_report
 
@@ -946,8 +946,8 @@ def team_report_preview(
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-    # pdf → png dönüşümü için pypdf2 + matplotlib yok, doğrudan PDF döndür
-    # Önizleme: ilk sayfanın thumbnail'ı
+    # No pypdf2 + matplotlib for pdf → png conversion; return the PDF directly
+    # Preview: thumbnail of the first page
     try:
         from pdf2image import convert_from_path
         images = convert_from_path(pdf_path, dpi=96, first_page=1, last_page=1)
@@ -957,10 +957,10 @@ def team_report_preview(
         _os.remove(pdf_path)
         return {"team": team_name, "pages": 7, "thumbnail": thumb}
     except Exception:
-        # pdf2image yoksa sadece download linkini döndür
+        # Without pdf2image only return the download link
         _os.remove(pdf_path)
         return {"team": team_name, "pages": 7,
-                "message": "Önizleme için pdf2image kütüphanesi gerekli. PDF indirmek için /pdf endpoint'ini kullanın."}
+                "message": "Preview needs the pdf2image library. Use the /pdf endpoint to download the PDF."}
 
 
 @app.get("/reports/compare/{team_a}/{team_b}/pdf", tags=["reports"])
@@ -1021,7 +1021,7 @@ def _load_player_pool(
         filters.append("m.league = :league")
         params["league"] = league
     if season:
-        # Hem '2025-2026' hem '25/26' formatını kabul et
+        # Accept both '2025-2026' and '25/26'
         parts = str(season).split("-")
         ss = f"{parts[0][2:]}/{parts[1][2:]}" if len(parts) == 2 and len(parts[0]) == 4 else season
         filters.append("m.season IN (:season, :season_ss)")
@@ -1414,7 +1414,7 @@ def transfer_squad_needs(
 
 
 # ---------------------------------------------------------------------------
-# Stil — şablonlar, parmak izi, küme scatter
+# Style — templates, fingerprint, cluster scatter
 # ---------------------------------------------------------------------------
 
 from src.analysis.style import (
@@ -1504,7 +1504,7 @@ def team_why_successful(
 
     sw = _team_sw(fp)
 
-    # Sıralama bilgisi (puan tablosundan)
+    # Standing (from the league table)
     row = ts[ts["team_name"] == team_name].iloc[0].to_dict() if not ts[ts["team_name"] == team_name].empty else {}
     summary_cards = {
         "matches_played": row.get("matches_played"),
@@ -1552,7 +1552,7 @@ def h2h_analysis(
     reco = _h2h_reco(fp_a, fp_b, our_name=team_a, their_name=team_b)
     reco_inv = _h2h_reco(fp_b, fp_a, our_name=team_b, their_name=team_a)
 
-    # Geçmiş skorlar
+    # Past scores
     hist_q = """
         SELECT match_id, season, round, match_date::text AS date,
                home_team_name, away_team_name, home_goals, away_goals
@@ -1584,7 +1584,7 @@ def transfer_squad_fit(payload: dict = Body(...)):
     """Body: {team, formation, style_target (template:id|team:name|null),
              slot_assignments: {slot_id: player_id?}, league?, season?, min_minutes?}.
 
-    Yanıt: slot başına {assigned_player, fit_pct, reason}.
+    Response: per slot {assigned_player, fit_pct, reason}.
     """
     team = payload.get("team")
     formation = payload.get("formation", "4-3-3")
@@ -1604,7 +1604,7 @@ def transfer_squad_fit(payload: dict = Body(...)):
 
     team_df = pool[pool["team_name"].str.lower() == team.lower()] if not pool.empty else pool
 
-    # Hedef stil vektörü
+    # Target style vector
     target_vector = None
     try:
         ts = db.get_team_stats(league, season)
@@ -1614,7 +1614,7 @@ def transfer_squad_fit(payload: dict = Body(...)):
 
     slots = _evaluate_squad_fit(team_df, formation, target_vector, slot_assignments)
 
-    # Boş slot'lar için öneri: takım dışı havuzda, slot.suggested_role rol skoruna göre top 5.
+    # Suggestions for empty slots: from players outside the team, top 5 by role score for slot.suggested_role.
     other_df = pool[pool["team_name"].str.lower() != team.lower()] if not pool.empty else pool
     for slot in slots:
         if slot["assigned_player"] is None and not other_df.empty:

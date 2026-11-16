@@ -1,1 +1,1 @@
-"""GNN sinerji grafı — node/edge build, model, training, inference."""
+"""GNN synergy graph — node/edge build, model, training, inference."""

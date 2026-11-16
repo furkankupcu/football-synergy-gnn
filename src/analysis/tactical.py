@@ -6,12 +6,12 @@ import pandas as pd
 
 def calculate_ppda(team_stats: pd.DataFrame) -> pd.DataFrame:
     """
-    PPDA proxy: Rakip pas hacmi yok, bu yüzden alternatif tanım kullanılır:
+    PPDA proxy: opponent pass volume is not available, so an alternative definition is used:
         PPDA_proxy = (own_passes / 3) / def_actions
     def_actions = tackles + interceptions + blocks
 
-    Gerçek PPDA için rakip pasları gerekir (FBref'in team season stats'ında yok).
-    Bu proxy lig içi sıralamada doğru bilgi verir.
+    True PPDA needs opponent passes (not in FBref's team season stats).
+    This proxy still ranks teams correctly within a league.
     """
     df = team_stats.copy()
     def_actions = (
@@ -19,7 +19,7 @@ def calculate_ppda(team_stats: pd.DataFrame) -> pd.DataFrame:
         + df.get("interceptions", 0).fillna(0)
         + df.get("blocks", 0).fillna(0)
     )
-    # Ortalama olarak takımın yaptığı pas / aksiyon
+    # On average, the team's passes per defensive action
     if "passes" in df.columns:
         df["ppda"] = (df["passes"].fillna(0) / 3) / def_actions.replace(0, np.nan)
     else:
@@ -28,21 +28,21 @@ def calculate_ppda(team_stats: pd.DataFrame) -> pd.DataFrame:
 
 
 def classify_pressing_style(ppda: float) -> str:
-    """PPDA değerine göre pressing stilini sınıflandırır."""
+    """Classify the pressing style from the PPDA value."""
     if pd.isna(ppda):
-        return "Bilinmiyor"
+        return "Unknown"
     if ppda < 8:
-        return "Yüksek Pres"
+        return "High Press"
     elif ppda < 11:
-        return "Orta Pres"
+        return "Mid Press"
     elif ppda < 14:
-        return "Orta-Düşük Blok"
+        return "Mid-Low Block"
     else:
-        return "Düşük Blok"
+        return "Low Block"
 
 
 def defensive_intensity(team_stats: pd.DataFrame) -> pd.DataFrame:
-    """Defensive actions per 90 üretir — takım pressingini özetleyen alternatif metrik."""
+    """Defensive actions per 90 — an alternative metric summarising team pressing."""
     df = team_stats.copy()
     mp = df.get("matches_played", pd.Series([1] * len(df))).replace(0, np.nan)
 
@@ -56,7 +56,7 @@ def defensive_intensity(team_stats: pd.DataFrame) -> pd.DataFrame:
 
 
 def attack_efficiency(team_stats: pd.DataFrame) -> pd.DataFrame:
-    """xG ↔ gerçek gol verimliliği (overperform / underperform tespiti)."""
+    """xG ↔ actual goals efficiency (over/under-performance)."""
     df = team_stats.copy()
     if "xg" in df.columns and "goals_for" in df.columns:
         df["goal_xg_diff"] = df["goals_for"] - df["xg"]
@@ -66,7 +66,7 @@ def attack_efficiency(team_stats: pd.DataFrame) -> pd.DataFrame:
 
 
 def build_tactical_report(team_stats: pd.DataFrame) -> pd.DataFrame:
-    """PPDA + savunma yoğunluğu + atak verimliliğini tek tabloda özetler."""
+    """PPDA + defensive intensity + attacking efficiency in one table."""
     df = calculate_ppda(team_stats)
     df = defensive_intensity(df)
     df = attack_efficiency(df)

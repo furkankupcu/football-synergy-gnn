@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="tr">
+<html lang="en">
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Footscrapping · Analitik</title>
+<title>Footscrapping · Analytics</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <style>
@@ -110,7 +110,7 @@
   @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
   .fade-in { animation: fadeIn .25s ease; }
 
-  /* SVG pitch — mplsoccer estetiğine yakın */
+  /* SVG pitch — close to the mplsoccer look */
   .pitch-svg { width: 100%; height: auto; display: block; border-radius: 12px; background: #0a3d1f; box-shadow: inset 0 0 80px rgba(0,0,0,0.45); }
   .pitch-grass { fill: #1b6b3a; }
   .pitch-grass-alt { fill: #1a5e34; }
@@ -129,10 +129,10 @@
   .pitch-shape-line { stroke: rgba(249, 115, 22, 0.35); stroke-width: 0.4; stroke-dasharray: 1.5 1; fill: none; pointer-events: none; }
   .pitch-bubble-label { fill: #fff; font-size: 2.0px; font-weight: 700; text-anchor: middle; dominant-baseline: middle; pointer-events: none; text-shadow: 0 1px 1px rgba(0,0,0,0.7); }
 
-  /* Pill rozet (Streamlit'teki gibi) */
+  /* Pill badge (as in Streamlit) */
   .pill { display:inline-block; padding: 2px 8px; border-radius: 999px; font-size: 11px; background: #22d3ee20; color: #22d3ee; font-weight: 600; }
 
-  /* Search input içerideki input stilini override et */
+  /* Override the inner input style of the search input */
   .relative > input { background: var(--surface2); border: 1px solid var(--border); color: var(--text); padding: 6px 10px; border-radius: 6px; }
   .relative > input:focus { border-color: var(--blue); outline: none; }
 
@@ -336,44 +336,44 @@
 
 <!-- Tabs -->
 <nav class="border-b border-[#30363d] px-5 flex gap-5 overflow-x-auto" style="background:#161b22">
-  <button class="tab-btn active" onclick="switchTab('overview')">📊 Özet</button>
-  <button class="tab-btn" onclick="switchTab('matches')">🏟️ Maçlar</button>
-  <button class="tab-btn" onclick="switchTab('players')">👤 Oyuncular</button>
-  <button class="tab-btn" onclick="switchTab('teams')">🛡️ Takımlar</button>
+  <button class="tab-btn active" onclick="switchTab('overview')">📊 Overview</button>
+  <button class="tab-btn" onclick="switchTab('matches')">🏟️ Matches</button>
+  <button class="tab-btn" onclick="switchTab('players')">👤 Players</button>
+  <button class="tab-btn" onclick="switchTab('teams')">🛡️ Teams</button>
   <button class="tab-btn" onclick="switchTab('transfer')">🔄 Transfer</button>
   <button class="tab-btn" onclick="switchTab('tactical')">🧪 Tactical Lab</button>
-  <button class="tab-btn" onclick="switchTab('reports')">📄 Raporlar</button>
+  <button class="tab-btn" onclick="switchTab('reports')">📄 Reports</button>
 </nav>
 
-<!-- Global Filtre Bar -->
+<!-- Global Filter Bar -->
 <div id="global-filter-bar" style="background:#161b22;border-bottom:1px solid #30363d;padding:8px 20px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;position:sticky;top:49px;z-index:30">
-  <span class="text-xs font-medium" style="color:#8b949e;white-space:nowrap">Filtre:</span>
+  <span class="text-xs font-medium" style="color:#8b949e;white-space:nowrap">Filter:</span>
   <div class="flex items-center gap-1.5">
-    <label class="text-xs" style="color:#8b949e;white-space:nowrap">Lig</label>
+    <label class="text-xs" style="color:#8b949e;white-space:nowrap">League</label>
     <select id="gl-league" class="text-xs" style="padding:4px 8px;width:200px" onchange="applyGlobalFilter()">
-      <option value="">Tüm Ligler</option>
+      <option value="">All Leagues</option>
     </select>
   </div>
   <div class="flex items-center gap-1.5">
-    <label class="text-xs" style="color:#8b949e;white-space:nowrap">Sezon</label>
+    <label class="text-xs" style="color:#8b949e;white-space:nowrap">Season</label>
     <select id="gl-season" class="text-xs" style="padding:4px 8px;width:100px" onchange="applyGlobalFilter()">
-      <option value="">Tüm Sezonlar</option>
+      <option value="">All Seasons</option>
     </select>
   </div>
-  <button class="btn btn-sm text-xs" onclick="clearGlobalFilter()" style="padding:4px 10px">✕ Temizle</button>
+  <button class="btn btn-sm text-xs" onclick="clearGlobalFilter()" style="padding:4px 10px">✕ Clear</button>
   <span id="gl-active-label" class="text-xs" style="color:#ffa657;display:none"></span>
 </div>
 
 <main class="px-5 py-5 max-w-[1440px] mx-auto">
 
-  <!-- ÖZET TAB -->
+  <!-- OVERVIEW TAB -->
   <div id="tab-overview" class="fade-in">
-    <!-- Hero header — kapsam ve GNN durumu -->
+    <!-- Hero header — coverage and GNN status -->
     <div class="card p-4 mb-5" style="background:linear-gradient(135deg, rgba(31,111,235,.08), rgba(126,231,135,.04));border-color:#1f2933">
       <div class="flex flex-wrap items-center gap-3">
-        <div class="text-lg font-bold">📊 Genel Bakış</div>
-        <span id="ov-active-league" class="badge pill-home" style="background:#1f3a5f;color:#79c0ff">Tüm Ligler</span>
-        <span id="ov-active-season" class="badge pill-home" style="background:#3a2a1f;color:#ffa657">Tüm Sezonlar</span>
+        <div class="text-lg font-bold">📊 Overview</div>
+        <span id="ov-active-league" class="badge pill-home" style="background:#1f3a5f;color:#79c0ff">All Leagues</span>
+        <span id="ov-active-season" class="badge pill-home" style="background:#3a2a1f;color:#ffa657">All Seasons</span>
         <div class="ml-auto flex flex-wrap items-center gap-3 text-xs" style="color:#8b949e">
           <span id="ov-gnn-badge" style="color:#7ee787"></span>
           <span id="ov-cov-badge" style="color:#ffa657"></span>
@@ -386,24 +386,24 @@
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-5">
       <div class="card p-4">
         <div class="flex items-center justify-between mb-3">
-          <h2 class="text-xs font-semibold text-[#8b949e] uppercase tracking-widest">Top Golcüler</h2>
-          <span class="tag">xG karşılaştırma</span>
+          <h2 class="text-xs font-semibold text-[#8b949e] uppercase tracking-widest">Top Scorers</h2>
+          <span class="tag">xG comparison</span>
         </div>
         <div class="overflow-x-auto">
           <table id="tbl-scorers">
-            <thead><tr><th>#</th><th>Oyuncu</th><th>Takım</th><th>Pos</th><th>Gol</th><th>xG</th><th>G–xG</th><th>As.</th><th>Maç</th></tr></thead>
+            <thead><tr><th>#</th><th>Player</th><th>Team</th><th>Pos</th><th>Goals</th><th>xG</th><th>G–xG</th><th>Ast.</th><th>Apps</th></tr></thead>
             <tbody></tbody>
           </table>
         </div>
       </div>
       <div class="card p-4">
         <div class="flex items-center justify-between mb-3">
-          <h2 class="text-xs font-semibold text-[#8b949e] uppercase tracking-widest">En Yüksek Rating</h2>
-          <span class="tag">min 5 maç</span>
+          <h2 class="text-xs font-semibold text-[#8b949e] uppercase tracking-widest">Highest Rating</h2>
+          <span class="tag">min 5 matches</span>
         </div>
         <div class="overflow-x-auto">
           <table id="tbl-ratings">
-            <thead><tr><th>#</th><th>Oyuncu</th><th>Takım</th><th>Pos</th><th>Rating</th><th>Maç</th><th>Gol</th><th>As.</th></tr></thead>
+            <thead><tr><th>#</th><th>Player</th><th>Team</th><th>Pos</th><th>Rating</th><th>Apps</th><th>Goals</th><th>Ast.</th></tr></thead>
             <tbody></tbody>
           </table>
         </div>
@@ -411,43 +411,43 @@
     </div>
 
     <div id="overview-chart-section" class="card p-4 mb-5">
-      <h2 class="text-xs font-semibold text-[#8b949e] uppercase tracking-widest mb-3">Top 10 Golcü — Gol vs xG</h2>
+      <h2 class="text-xs font-semibold text-[#8b949e] uppercase tracking-widest mb-3">Top 10 Scorers — Goals vs xG</h2>
       <canvas id="chart-scorers" height="90"></canvas>
     </div>
 
-    <!-- Son Maçlar feed -->
+    <!-- Recent matches feed -->
     <div class="card p-4">
       <div class="flex items-center justify-between mb-3">
-        <h2 class="text-xs font-semibold text-[#8b949e] uppercase tracking-widest">Son Maçlar</h2>
-        <button class="btn btn-sm" onclick="switchTab('matches')">Tümünü gör →</button>
+        <h2 class="text-xs font-semibold text-[#8b949e] uppercase tracking-widest">Recent Matches</h2>
+        <button class="btn btn-sm" onclick="switchTab('matches')">See all →</button>
       </div>
       <div id="ov-recent-feed" class="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
-        <div class="empty-state"><div class="icon">🏟️</div><p>Yükleniyor…</p></div>
+        <div class="empty-state"><div class="icon">🏟️</div><p>Loading…</p></div>
       </div>
     </div>
   </div>
 
-  <!-- MAÇLAR TAB -->
+  <!-- MATCHES TAB -->
   <div id="tab-matches" class="hidden">
     <div class="card p-4 mb-4">
       <div class="flex flex-wrap gap-3 items-end">
         <div>
-          <label class="block text-xs text-[#8b949e] mb-1.5 font-medium">Takım</label>
-          <select id="f-team" class="w-48" onchange="loadMatches()"><option value="">Tümü</option></select>
+          <label class="block text-xs text-[#8b949e] mb-1.5 font-medium">Team</label>
+          <select id="f-team" class="w-48" onchange="loadMatches()"><option value="">All</option></select>
         </div>
         <div>
-          <label class="block text-xs text-[#8b949e] mb-1.5 font-medium">Lig</label>
-          <select id="f-league" class="w-48" onchange="loadMatches()"><option value="">Tümü</option></select>
+          <label class="block text-xs text-[#8b949e] mb-1.5 font-medium">League</label>
+          <select id="f-league" class="w-48" onchange="loadMatches()"><option value="">All</option></select>
         </div>
         <div>
-          <label class="block text-xs text-[#8b949e] mb-1.5 font-medium">Sezon</label>
-          <select id="f-season" class="w-32" onchange="loadMatches()"><option value="">Tümü</option></select>
+          <label class="block text-xs text-[#8b949e] mb-1.5 font-medium">Season</label>
+          <select id="f-season" class="w-32" onchange="loadMatches()"><option value="">All</option></select>
         </div>
         <div>
-          <label class="block text-xs text-[#8b949e] mb-1.5 font-medium">Hafta</label>
+          <label class="block text-xs text-[#8b949e] mb-1.5 font-medium">Matchweek</label>
           <input id="f-round" type="number" min="1" placeholder="—" class="w-20" oninput="loadMatches()" />
         </div>
-        <button class="btn" onclick="clearMatchFilters()">Temizle</button>
+        <button class="btn" onclick="clearMatchFilters()">Clear</button>
       </div>
     </div>
     <div id="matches-count" class="text-xs text-[#8b949e] mb-2 px-1"></div>
@@ -456,11 +456,11 @@
         <table id="tbl-matches">
           <thead>
             <tr>
-              <th>Tarih</th>
-              <th>Hft</th>
-              <th style="min-width:120px">Ev Sahibi</th>
-              <th class="text-center" style="width:110px">Skor</th>
-              <th style="min-width:120px">Deplasman</th>
+              <th>Date</th>
+              <th>Wk</th>
+              <th style="min-width:120px">Home</th>
+              <th class="text-center" style="width:110px">Score</th>
+              <th style="min-width:120px">Away</th>
               <th style="width:110px">xG</th>
               <th></th>
             </tr>
@@ -469,7 +469,7 @@
         </table>
       </div>
       <div id="matches-more" class="p-3 text-center hidden">
-        <button class="btn" onclick="loadMoreMatches()">Daha fazla yükle</button>
+        <button class="btn" onclick="loadMoreMatches()">Load more</button>
       </div>
     </div>
   </div>
@@ -478,36 +478,36 @@
   <div id="tab-players" class="hidden">
     <!-- Mode segmented control -->
     <div class="flex gap-1 mb-4 border-b border-[#30363d]">
-      <button class="tab-btn active" id="pmode-btn-discover" onclick="switchPlayerMode('discover')">🔍 Keşfet</button>
+      <button class="tab-btn active" id="pmode-btn-discover" onclick="switchPlayerMode('discover')">🔍 Discover</button>
       <button class="tab-btn" id="pmode-btn-scout" onclick="switchPlayerMode('scout')">🎯 Scout</button>
-      <button class="tab-btn" id="pmode-btn-compare" onclick="switchPlayerMode('compare')">⚖️ Karşılaştır</button>
+      <button class="tab-btn" id="pmode-btn-compare" onclick="switchPlayerMode('compare')">⚖️ Compare</button>
     </div>
 
-    <!-- MODE: KEŞFET -->
+    <!-- MODE: DISCOVER -->
     <div id="pmode-discover">
       <div class="card p-4 mb-4">
         <div class="flex flex-wrap gap-3 items-end">
           <div>
-            <label class="block text-xs text-[#8b949e] mb-1.5 font-medium">Oyuncu adı</label>
-            <input id="p-name" placeholder="Ara..." class="w-52" />
+            <label class="block text-xs text-[#8b949e] mb-1.5 font-medium">Player name</label>
+            <input id="p-name" placeholder="Search..." class="w-52" />
           </div>
           <div>
-            <label class="block text-xs text-[#8b949e] mb-1.5 font-medium">Takım</label>
+            <label class="block text-xs text-[#8b949e] mb-1.5 font-medium">Team</label>
             <div id="p-team-search" class="w-48"></div>
-            <select id="p-team" class="hidden"><option value="">Tümü</option></select>
+            <select id="p-team" class="hidden"><option value="">All</option></select>
           </div>
           <div>
-            <label class="block text-xs text-[#8b949e] mb-1.5 font-medium">Mevki</label>
+            <label class="block text-xs text-[#8b949e] mb-1.5 font-medium">Position</label>
             <select id="p-pos">
-              <option value="">Tümü</option>
+              <option value="">All</option>
               <option>GK</option>
               <option>RB</option><option>LB</option><option>RCB</option><option>LCB</option>
               <option>CDM</option><option>CM</option><option>CAM</option>
               <option>RW</option><option>LW</option><option>ST</option>
             </select>
           </div>
-          <button class="btn-primary btn" onclick="searchPlayers()">Ara</button>
-          <button class="btn" onclick="clearPlayerFilters()">Temizle</button>
+          <button class="btn-primary btn" onclick="searchPlayers()">Search</button>
+          <button class="btn" onclick="clearPlayerFilters()">Clear</button>
         </div>
       </div>
       <div class="card overflow-hidden">
@@ -515,9 +515,9 @@
           <table id="tbl-players">
             <thead>
               <tr>
-                <th>Oyuncu</th><th>Takım</th><th>Pos</th><th>Maç</th>
-                <th>Rating</th><th>Gol</th><th>Asist</th>
-                <th>xG</th><th>xA</th><th>Dakika</th>
+                <th>Player</th><th>Team</th><th>Pos</th><th>Apps</th>
+                <th>Rating</th><th>Goals</th><th>Assists</th>
+                <th>xG</th><th>xA</th><th>Minutes</th>
               </tr>
             </thead>
             <tbody></tbody>
@@ -531,17 +531,17 @@
       <div class="card p-4 mb-4">
         <div class="flex flex-wrap gap-3 items-end">
           <div>
-            <label class="block text-xs text-[#8b949e] mb-1.5 font-medium">Pozisyon Grubu</label>
+            <label class="block text-xs text-[#8b949e] mb-1.5 font-medium">Position Group</label>
             <select id="sc-group" class="w-48" onchange="onScoutGroupChange()"></select>
           </div>
           <div>
-            <label class="block text-xs text-[#8b949e] mb-1.5 font-medium">Rol</label>
+            <label class="block text-xs text-[#8b949e] mb-1.5 font-medium">Role</label>
             <select id="sc-role" class="w-56" onchange="onScoutRoleChange()"></select>
           </div>
           <div>
-            <label class="block text-xs text-[#8b949e] mb-1.5 font-medium">Mevki Filtresi</label>
+            <label class="block text-xs text-[#8b949e] mb-1.5 font-medium">Position Filter</label>
             <select id="sc-pos" class="w-28">
-              <option value="">Tümü</option>
+              <option value="">All</option>
               <option>GK</option>
               <option>RB</option><option>LB</option><option>RCB</option><option>LCB</option>
               <option>CDM</option><option>CM</option><option>CAM</option>
@@ -549,11 +549,11 @@
             </select>
           </div>
           <div>
-            <label class="block text-xs text-[#8b949e] mb-1.5 font-medium">Min. Dakika</label>
+            <label class="block text-xs text-[#8b949e] mb-1.5 font-medium">Min. Minutes</label>
             <input id="sc-min-min" type="number" value="450" class="w-24" />
           </div>
           <div>
-            <label class="block text-xs text-[#8b949e] mb-1.5 font-medium">Yaş</label>
+            <label class="block text-xs text-[#8b949e] mb-1.5 font-medium">Age</label>
             <div class="flex gap-1 items-center">
               <input id="sc-age-min" type="number" placeholder="min" class="w-16" />
               <span class="text-[#8b949e]">–</span>
@@ -561,50 +561,50 @@
             </div>
           </div>
           <div>
-            <label class="block text-xs text-[#8b949e] mb-1.5 font-medium">Tercih Ayak</label>
+            <label class="block text-xs text-[#8b949e] mb-1.5 font-medium">Preferred Foot</label>
             <select id="sc-foot" class="w-28">
-              <option value="">Tümü</option>
-              <option value="right">Sağ</option>
-              <option value="left">Sol</option>
-              <option value="both">İki ayak</option>
+              <option value="">All</option>
+              <option value="right">Right</option>
+              <option value="left">Left</option>
+              <option value="both">Both feet</option>
             </select>
           </div>
-          <button class="btn-primary btn" onclick="loadScout()">Ara</button>
+          <button class="btn-primary btn" onclick="loadScout()">Search</button>
         </div>
       </div>
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
         <div class="card p-4">
           <h2 class="text-xs font-semibold text-[#8b949e] uppercase tracking-widest mb-3" id="scout-table-title">Top 10</h2>
           <div class="overflow-x-auto" id="scout-table-wrap">
-            <div class="empty-state"><div class="icon">🔍</div><p>Rol seçip arayın.</p></div>
+            <div class="empty-state"><div class="icon">🔍</div><p>Pick a role and search.</p></div>
           </div>
         </div>
         <div class="card p-4">
-          <h2 class="text-xs font-semibold text-[#8b949e] uppercase tracking-widest mb-3">Final Skor</h2>
+          <h2 class="text-xs font-semibold text-[#8b949e] uppercase tracking-widest mb-3">Final Score</h2>
           <div style="position:relative;height:340px">
             <canvas id="chart-scout-bar"></canvas>
           </div>
         </div>
       </div>
       <div class="card p-4 mt-5">
-        <h2 class="text-xs font-semibold text-[#8b949e] uppercase tracking-widest mb-3">Top 5 Radar Karşılaştırması</h2>
+        <h2 class="text-xs font-semibold text-[#8b949e] uppercase tracking-widest mb-3">Top 5 Radar Comparison</h2>
         <div style="position:relative;height:460px">
           <canvas id="chart-scout-radar"></canvas>
         </div>
       </div>
     </div>
 
-    <!-- MODE: KARŞILAŞTIR -->
+    <!-- MODE: COMPARE -->
     <div id="pmode-compare" class="hidden">
       <div class="card p-4">
-        <h2 class="text-xs font-semibold text-[#8b949e] uppercase tracking-widest mb-3">Oyuncu Karşılaştırması (Mevki Analizi)</h2>
+        <h2 class="text-xs font-semibold text-[#8b949e] uppercase tracking-widest mb-3">Player Comparison (Position Analysis)</h2>
         <div class="flex flex-wrap gap-3 items-end mb-4">
           <div>
-            <label class="block text-xs text-[#8b949e] mb-1.5 font-medium">Oyuncu Seç (maks 6)</label>
+            <label class="block text-xs text-[#8b949e] mb-1.5 font-medium">Select Players (max 6)</label>
             <select id="sc-compare-sel" class="w-64"></select>
           </div>
-          <button class="btn" onclick="addComparePlayer()">+ Ekle</button>
-          <button class="btn" onclick="clearComparePlayers()">Temizle</button>
+          <button class="btn" onclick="addComparePlayer()">+ Add</button>
+          <button class="btn" onclick="clearComparePlayers()">Clear</button>
         </div>
         <div id="sc-compare-tags" class="flex flex-wrap gap-2 mb-3"></div>
         <div style="position:relative;height:460px">
@@ -619,22 +619,22 @@
   <div id="tab-teams" class="hidden">
     <!-- Teams grup nav -->
     <div class="flex gap-1 mb-1 border-b border-[#30363d]">
-      <button class="tab-btn active" id="tgrp-btn-tablo"      onclick="showTeamGroup('tablo')">📋 Tablo</button>
-      <button class="tab-btn"        id="tgrp-btn-performans" onclick="showTeamGroup('performans')">📊 Performans</button>
-      <button class="tab-btn"        id="tgrp-btn-derinlik"   onclick="showTeamGroup('derinlik')">🔍 Derinlik</button>
+      <button class="tab-btn active" id="tgrp-btn-tablo"      onclick="showTeamGroup('tablo')">📋 Table</button>
+      <button class="tab-btn"        id="tgrp-btn-performans" onclick="showTeamGroup('performans')">📊 Performance</button>
+      <button class="tab-btn"        id="tgrp-btn-derinlik"   onclick="showTeamGroup('derinlik')">🔍 Deep Dive</button>
     </div>
     <div id="tgrp-subs" class="flex gap-2 mt-3 mb-4 flex-wrap">
-      <button class="btn btn-sm" id="tsub-btn-cards"    onclick="showTeamSub('cards')">🛡 Takımlar</button>
-      <button class="btn btn-sm" id="tsub-btn-standing" onclick="showTeamSub('standing')">📋 Puan Durumu</button>
+      <button class="btn btn-sm" id="tsub-btn-cards"    onclick="showTeamSub('cards')">🛡 Teams</button>
+      <button class="btn btn-sm" id="tsub-btn-standing" onclick="showTeamSub('standing')">📋 Standings</button>
     </div>
 
     <!-- Ortak filtre -->
     <div class="card p-4 mb-4 flex flex-wrap gap-3 items-end">
       <div>
-        <label class="block text-xs text-[#8b949e] mb-1.5 font-medium">Sezon</label>
-        <select id="t-season" class="w-32" onchange="refreshTeamSub()"><option value="">Tümü</option></select>
+        <label class="block text-xs text-[#8b949e] mb-1.5 font-medium">Season</label>
+        <select id="t-season" class="w-32" onchange="refreshTeamSub()"><option value="">All</option></select>
       </div>
-      <button class="btn-primary btn" onclick="refreshTeamSub()">Yükle</button>
+      <button class="btn-primary btn" onclick="refreshTeamSub()">Load</button>
     </div>
 
     <!-- Kartlar -->
@@ -642,14 +642,14 @@
       <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3" id="teams-grid"></div>
     </div>
 
-    <!-- Puan Durumu -->
+    <!-- Standings -->
     <div id="tsub-standing" class="hidden">
       <div class="card overflow-hidden">
         <div class="overflow-x-auto">
           <table id="tbl-standing">
             <thead><tr>
-              <th>#</th><th>Takım</th><th>O</th><th>G</th><th>B</th><th>M</th>
-              <th>AG</th><th>YG</th><th>A/Y</th><th class="text-[#58a6ff]">Puan</th>
+              <th>#</th><th>Team</th><th>P</th><th>W</th><th>D</th><th>L</th>
+              <th>GF</th><th>GA</th><th>GD</th><th class="text-[#58a6ff]">Pts</th>
             </tr></thead>
             <tbody></tbody>
           </table>
@@ -657,15 +657,15 @@
       </div>
     </div>
 
-    <!-- Taktik İstatistikler -->
+    <!-- Tactical stats -->
     <div id="tsub-tactic" class="hidden">
       <div class="card overflow-hidden">
         <div class="overflow-x-auto">
           <table id="tbl-tactic">
             <thead><tr>
-              <th>Takım</th><th>Puan</th><th>Top Hakimiyeti%</th><th>xG/maç</th>
-              <th>Şut/maç</th><th>İsabetli Şut</th><th>Pas/maç</th><th>Pas%</th>
-              <th>Anahtar Pas</th><th>Müdahale</th><th>Top Kesme</th><th>Faul</th>
+              <th>Team</th><th>Pts</th><th>Possession%</th><th>xG/match</th>
+              <th>Shots/match</th><th>On Target</th><th>Passes/match</th><th>Pass%</th>
+              <th>Key Passes</th><th>Tackles</th><th>Interceptions</th><th>Fouls</th>
             </tr></thead>
             <tbody></tbody>
           </table>
@@ -673,10 +673,10 @@
       </div>
     </div>
 
-    <!-- xG Analizi -->
+    <!-- xG Analysis -->
     <div id="tsub-xg" class="hidden">
       <div class="card p-4 mb-4">
-        <h2 class="text-xs font-semibold text-[#8b949e] uppercase tracking-widest mb-4">xG vs Gerçek Gol (Sezon Toplamı)</h2>
+        <h2 class="text-xs font-semibold text-[#8b949e] uppercase tracking-widest mb-4">xG vs Actual Goals (season total)</h2>
         <div id="xg-scatter-container" style="position:relative;height:420px">
           <canvas id="chart-xg-scatter"></canvas>
         </div>
@@ -685,8 +685,8 @@
         <div class="overflow-x-auto">
           <table id="tbl-xg">
             <thead><tr>
-              <th>Takım</th><th>xG</th><th>Gol</th>
-              <th>Fark</th>
+              <th>Team</th><th>xG</th><th>Goals</th>
+              <th>Diff</th>
             </tr></thead>
             <tbody></tbody>
           </table>
@@ -694,17 +694,17 @@
       </div>
     </div>
 
-    <!-- Neden Başarılı? -->
+    <!-- Why Successful? -->
     <div id="tsub-why" class="hidden">
       <div class="card p-4 mb-4 flex flex-wrap gap-3 items-end">
         <div>
-          <label class="block text-xs text-[#8b949e] mb-1.5 font-medium">Takım</label>
-          <select id="why-team" class="w-64"><option value="">— Seçiniz —</option></select>
+          <label class="block text-xs text-[#8b949e] mb-1.5 font-medium">Team</label>
+          <select id="why-team" class="w-64"><option value="">— Select —</option></select>
         </div>
-        <button class="btn-primary btn" onclick="loadWhySuccessful()">Analiz Et</button>
+        <button class="btn-primary btn" onclick="loadWhySuccessful()">Analyse</button>
       </div>
       <div id="why-content">
-        <div class="empty-state"><div class="icon">🌟</div><p>Takım seçin.</p></div>
+        <div class="empty-state"><div class="icon">🌟</div><p>Select a team.</p></div>
       </div>
     </div>
 
@@ -712,17 +712,17 @@
     <div id="tsub-h2h" class="hidden">
       <div class="card p-4 mb-4 flex flex-wrap gap-3 items-end">
         <div>
-          <label class="block text-xs text-[#8b949e] mb-1.5 font-medium">Takım A (bizim)</label>
-          <select id="h2h-team-a" class="w-56"><option value="">— Seçiniz —</option></select>
+          <label class="block text-xs text-[#8b949e] mb-1.5 font-medium">Team A (ours)</label>
+          <select id="h2h-team-a" class="w-56"><option value="">— Select —</option></select>
         </div>
         <div>
-          <label class="block text-xs text-[#8b949e] mb-1.5 font-medium">Takım B (rakip)</label>
-          <select id="h2h-team-b" class="w-56"><option value="">— Seçiniz —</option></select>
+          <label class="block text-xs text-[#8b949e] mb-1.5 font-medium">Team B (opponent)</label>
+          <select id="h2h-team-b" class="w-56"><option value="">— Select —</option></select>
         </div>
-        <button class="btn-primary btn" onclick="loadH2H()">Karşılaştır</button>
+        <button class="btn-primary btn" onclick="loadH2H()">Compare</button>
       </div>
       <div id="h2h-content">
-        <div class="empty-state"><div class="icon">⚔️</div><p>İki takım seçin.</p></div>
+        <div class="empty-state"><div class="icon">⚔️</div><p>Select two teams.</p></div>
       </div>
     </div>
 
@@ -731,15 +731,15 @@
       <div class="card p-4 mb-4">
         <div class="flex flex-wrap gap-3 items-end mb-4">
           <div>
-            <label class="block text-xs text-[#8b949e] mb-1.5 font-medium">Lig</label>
-            <select id="radar-league" class="w-48" onchange="loadTeamRadar()"><option value="">Tüm Ligler</option></select>
+            <label class="block text-xs text-[#8b949e] mb-1.5 font-medium">League</label>
+            <select id="radar-league" class="w-48" onchange="loadTeamRadar()"><option value="">All Leagues</option></select>
           </div>
           <div>
-            <label class="block text-xs text-[#8b949e] mb-1.5 font-medium">Sezon</label>
-            <select id="radar-season" class="w-32" onchange="loadTeamRadar()"><option value="">Tümü</option></select>
+            <label class="block text-xs text-[#8b949e] mb-1.5 font-medium">Season</label>
+            <select id="radar-season" class="w-32" onchange="loadTeamRadar()"><option value="">All</option></select>
           </div>
           <div>
-            <label class="block text-xs text-[#8b949e] mb-1.5 font-medium">Karşılaştırılacak Takımlar (maks 5)</label>
+            <label class="block text-xs text-[#8b949e] mb-1.5 font-medium">Teams to compare (max 5)</label>
             <div id="radar-team-checkboxes" class="flex flex-wrap gap-2 mt-1"></div>
           </div>
         </div>
@@ -753,9 +753,9 @@
 
   <!-- TRANSFER TAB -->
   <div id="tab-transfer" class="hidden fade-in">
-    <!-- ℹ Stil Hedefi + Kadro Yerleştirme 🧪 Tactical Lab sekmesine taşındı.
-         Bu sekmedeki Star/Bütçe/Benzerlik paneller artık aşağıdaki "Pozisyon Grubu + Rol" seçimine göre çalışır. -->
-    <!-- DOM stub'ları geriye uyum için: eski onStyleModeChange / getStyleTarget ID'leri arar -->
+    <!-- ℹ Style target + squad placement moved to the 🧪 Tactical Lab tab.
+         The Star/Budget/Similarity panels on this tab now work from the "Position Group + Role" selection below. -->
+    <!-- DOM stubs for backward compatibility: the old onStyleModeChange / getStyleTarget look up these IDs -->
     <input type="hidden" id="tr-style-mode" value="" />
     <input type="hidden" id="tr-style-template" value="" />
     <div id="tr-style-team-search" class="hidden"></div>
@@ -763,104 +763,104 @@
     <div id="tr-style-team-wrap" class="hidden"></div>
     <span id="tr-style-active-label" class="hidden"></span>
 
-    <!-- Klasik filtreler (Benzerlik, Star, Bütçe için rol seçici) -->
+    <!-- Classic filters (role picker for Similarity, Star, Budget) -->
     <div class="card p-4 mb-4">
-      <p class="text-xs text-[#8b949e] mb-3">Bu seçim aşağıdaki <b>🔍 Benzerlik</b>, <b>⭐ Star Transfer</b> ve <b>💰 Bütçe Optimizasyonu</b> panellerini etkiler. <i>Stil hedefi artık 🧪 Tactical Lab içinde — analyze() ile tam stil-bazlı kadro analizi alabilirsin.</i></p>
+      <p class="text-xs text-[#8b949e] mb-3">This selection drives the <b>🔍 Similarity</b>, <b>⭐ Star Transfer</b> and <b>💰 Budget Optimisation</b> panels below. <i>The style target now lives in the 🧪 Tactical Lab — use analyze() there for a full style-based squad analysis.</i></p>
       <div class="flex flex-wrap gap-3 items-end">
         <div>
-          <label class="block text-xs text-[#8b949e] mb-1.5 font-medium">Pozisyon Grubu</label>
+          <label class="block text-xs text-[#8b949e] mb-1.5 font-medium">Position Group</label>
           <select id="tr-group" class="w-48" onchange="onTransferGroupChange()"></select>
         </div>
         <div>
-          <label class="block text-xs text-[#8b949e] mb-1.5 font-medium">Rol</label>
+          <label class="block text-xs text-[#8b949e] mb-1.5 font-medium">Role</label>
           <select id="tr-role" class="w-56" onchange="onTransferRoleChange()"></select>
         </div>
         <div>
-          <label class="block text-xs text-[#8b949e] mb-1.5 font-medium">Min. Dakika</label>
+          <label class="block text-xs text-[#8b949e] mb-1.5 font-medium">Min. Minutes</label>
           <input id="tr-min-min" type="number" value="450" class="w-24" />
         </div>
       </div>
     </div>
 
-    <!-- 1. Benzer Oyuncular -->
+    <!-- 1. Similar players -->
     <div class="card p-5 mb-5">
-      <h2 class="text-sm font-semibold text-[#8b949e] uppercase tracking-widest mb-3">🎯 Oyun Stiline Göre En Benzer Oyuncular</h2>
-      <p class="text-xs text-[#8b949e] mb-3">Seçilen rol metriklerine göre cosine similarity — tüm liglerde arama yapar.</p>
+      <h2 class="text-sm font-semibold text-[#8b949e] uppercase tracking-widest mb-3">🎯 Most Similar Players by Playing Style</h2>
+      <p class="text-xs text-[#8b949e] mb-3">Cosine similarity on the selected role metrics — searches all leagues.</p>
       <div class="flex flex-wrap gap-3 items-end mb-4">
         <div>
-          <label class="block text-xs text-[#8b949e] mb-1.5 font-medium">Referans Oyuncu</label>
+          <label class="block text-xs text-[#8b949e] mb-1.5 font-medium">Reference Player</label>
           <div id="tr-target-player-search" class="w-72"></div>
         </div>
-        <button class="btn-primary btn" onclick="loadSimilar()">Bul (GNN)</button>
+        <button class="btn-primary btn" onclick="loadSimilar()">Find (GNN)</button>
       </div>
       <div id="similar-target-info" class="hidden mb-3 p-3 rounded-lg" style="background:var(--surface2)"></div>
       <div class="overflow-x-auto" id="similar-table-wrap">
-        <div class="empty-state"><div class="icon">🎯</div><p>Oyuncu seçip arayın.</p></div>
+        <div class="empty-state"><div class="icon">🎯</div><p>Select a player and search.</p></div>
       </div>
     </div>
 
-    <!-- 2. Star Transfer Önerileri -->
+    <!-- 2. Star transfer suggestions -->
     <div class="card p-5 mb-5">
-      <h2 class="text-sm font-semibold text-[#8b949e] uppercase tracking-widest mb-1">⭐ Star Transfer Önerileri</h2>
-      <p class="text-xs text-[#8b949e] mb-1">Yukarıdaki <b>Pozisyon Grubu + Rol</b> seçimine göre en yüksek <b>Final Skor</b>'lu oyuncular listelenir.</p>
+      <h2 class="text-sm font-semibold text-[#8b949e] uppercase tracking-widest mb-1">⭐ Star Transfer Suggestions</h2>
+      <p class="text-xs text-[#8b949e] mb-1">Lists the players with the highest <b>Final Score</b> for the <b>Position Group + Role</b> selected above.</p>
       <details class="text-xs text-[#8b949e] mb-3" style="cursor:pointer">
-        <summary style="color:#58a6ff">ⓘ Skor formülü ve etiketler nasıl hesaplanır?</summary>
+        <summary style="color:#58a6ff">ⓘ How are the score and labels computed?</summary>
         <div class="mt-2 pl-3" style="border-left:2px solid #30363d">
-          • <b>Final Skor</b> = rol-pct × 0.80 + rating-pct × 0.20, log(maç sayısı) ile ağırlıklı. Yani rol metriklerinde lig içi yüzdelik dilim + maç-deneyimi.<br>
-          • <b>Stil Hedefi</b> aktifse skor o stille uyum yüzdesiyle yeniden ağırlıklanır.<br>
-          • <b>Takım Tier</b>: seçilen sezonun puan durumundan; alt yarı = <span class="text-[#7ee787]">Uygun (transferi kolay)</span>, üst yarı = <span class="text-[#ff7b72]">Kilit (zor)</span>.<br>
-          • <b>Durum</b>: oyuncunun mevcut sözleşme/sakatlık bilgisi (veri kaynağından).
+          • <b>Final Score</b> = role pct × 0.80 + rating pct × 0.20, weighted by log(matches). In other words: league percentile on the role metrics + match experience.<br>
+          • If a <b>Style Target</b> is active, the score is re-weighted by the fit with that style.<br>
+          • <b>Team Tier</b>: from the selected season's standings; bottom half = <span class="text-[#7ee787]">Available (easier to sign)</span>, top half = <span class="text-[#ff7b72]">Locked (hard)</span>.<br>
+          • <b>Status</b>: the player's current contract/injury status (from the data source).
         </div>
       </details>
-      <button class="btn mb-4" onclick="loadStarPicks()">Yükle</button>
+      <button class="btn mb-4" onclick="loadStarPicks()">Load</button>
       <div class="overflow-x-auto" id="star-table-wrap">
-        <div class="empty-state"><div class="icon">⭐</div><p>Rol seçip yükleyin.</p></div>
+        <div class="empty-state"><div class="icon">⭐</div><p>Pick a role and load.</p></div>
       </div>
     </div>
 
-    <!-- 3. Bütçe Dostu Yıldızlar -->
+    <!-- 3. Budget-friendly stars -->
     <div class="card p-5 mb-5">
-      <h2 class="text-sm font-semibold text-[#8b949e] uppercase tracking-widest mb-3">💰 Bütçe Dostu Yıldızlar</h2>
-      <p class="text-xs text-[#8b949e] mb-3">Seçilen referans takımdan daha düşük seviyede oynayan, yüksek performanslı oyuncular. Referans takım seçilmezse genel alt-yarı filtresi uygulanır.</p>
+      <h2 class="text-sm font-semibold text-[#8b949e] uppercase tracking-widest mb-3">💰 Budget-Friendly Stars</h2>
+      <p class="text-xs text-[#8b949e] mb-3">High performers playing at a lower level than the selected reference team. Without a reference team, a general bottom-half filter is applied.</p>
       <div class="flex flex-wrap gap-3 items-end mb-4">
         <div>
-          <label class="block text-xs text-[#8b949e] mb-1.5 font-medium">Referans Takım <span class="text-[#8b949e] font-normal">(opsiyonel)</span></label>
+          <label class="block text-xs text-[#8b949e] mb-1.5 font-medium">Reference Team <span class="text-[#8b949e] font-normal">(optional)</span></label>
           <div id="tr-budget-team-search" class="w-56"></div>
         </div>
-        <button class="btn-primary btn" onclick="loadBudgetGems()">Yükle</button>
+        <button class="btn-primary btn" onclick="loadBudgetGems()">Load</button>
       </div>
       <div id="budget-context" class="hidden text-xs text-[#8b949e] mb-3 italic"></div>
       <div class="overflow-x-auto" id="budget-table-wrap">
-        <div class="empty-state"><div class="icon">💰</div><p>Rol seçip yükleyin.</p></div>
+        <div class="empty-state"><div class="icon">💰</div><p>Pick a role and load.</p></div>
       </div>
     </div>
 
-    <!-- Saha Haritası -->
+    <!-- Pitch map -->
     <div class="card p-5 mt-5">
-      <h2 class="text-sm font-semibold text-[#8b949e] uppercase tracking-widest mb-3">🛡️ Takım Saha Haritası</h2>
-      <p class="text-xs text-[#8b949e] mb-3">Avg-position verisi olan oyuncuların sahadaki gerçek ortalama konumu. Daire boyutu = ölçüm sayısı.</p>
+      <h2 class="text-sm font-semibold text-[#8b949e] uppercase tracking-widest mb-3">🛡️ Team Pitch Map</h2>
+      <p class="text-xs text-[#8b949e] mb-3">Real average on-pitch position of players with avg-position data. Circle size = number of measurements.</p>
       <div class="flex flex-wrap gap-3 items-end mb-4">
         <div>
-          <label class="block text-xs text-[#8b949e] mb-1.5 font-medium">Takım</label>
+          <label class="block text-xs text-[#8b949e] mb-1.5 font-medium">Team</label>
           <div id="tr-map-team-search" class="w-64"></div>
         </div>
         <div>
-          <label class="block text-xs text-[#8b949e] mb-1.5 font-medium">Min. Dakika</label>
+          <label class="block text-xs text-[#8b949e] mb-1.5 font-medium">Min. Minutes</label>
           <input id="tm-min-min" type="number" value="450" class="w-24" />
         </div>
-        <label class="flex items-center gap-2 text-xs text-[#8b949e] cursor-pointer" title="Yoğunluk haritası göster (oyuncu kabarcıkları yerine)">
+        <label class="flex items-center gap-2 text-xs text-[#8b949e] cursor-pointer" title="Show a density map (instead of player bubbles)">
           <input type="checkbox" id="tm-heatmap" onchange="rerenderTeamMap()" />
           🔥 Heatmap
         </label>
-        <label class="flex items-center gap-2 text-xs text-[#8b949e] cursor-pointer" title="Üst üste binmeleri otomatik dağıt">
+        <label class="flex items-center gap-2 text-xs text-[#8b949e] cursor-pointer" title="Spread overlapping bubbles automatically">
           <input type="checkbox" id="tm-jitter" checked onchange="rerenderTeamMap()" />
           ✦ Anti-overlap
         </label>
-        <button class="btn-primary btn" onclick="loadTeamMap()">Göster</button>
+        <button class="btn-primary btn" onclick="loadTeamMap()">Show</button>
       </div>
       <div id="team-map-players-pick" class="mb-3 hidden"></div>
       <div id="team-map-wrap">
-        <div class="empty-state"><div class="icon">🗺️</div><p>Takım seçip yükleyin.</p></div>
+        <div class="empty-state"><div class="icon">🗺️</div><p>Select a team and load.</p></div>
       </div>
     </div>
   </div>
@@ -869,92 +869,92 @@
   <div id="tab-reports" class="hidden fade-in">
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-5">
 
-      <!-- Takım Raporu -->
+      <!-- Team report -->
       <div class="card p-5">
-        <h2 class="text-sm font-semibold text-[#8b949e] uppercase tracking-widest mb-4">📄 Takım Performans Raporu</h2>
-        <p class="text-xs text-[#8b949e] mb-4">Seçilen takım için 7 sayfalık PDF raporu: şut/ısı haritaları, xG analizi, oyuncu değerlendirme ve otomatik çıkarımlar.</p>
+        <h2 class="text-sm font-semibold text-[#8b949e] uppercase tracking-widest mb-4">📄 Team Performance Report</h2>
+        <p class="text-xs text-[#8b949e] mb-4">A 7-page PDF report for the selected team: shot/heat maps, xG analysis, player assessment and automatic insights.</p>
         <div class="flex flex-wrap gap-3 items-end mb-4">
           <div>
-            <label class="block text-xs text-[#8b949e] mb-1.5 font-medium">Lig</label>
+            <label class="block text-xs text-[#8b949e] mb-1.5 font-medium">League</label>
             <select id="r-league" class="w-48" onchange="populateReportTeams('r-league','r-team','r-season-select')">
-              <option value="">Tüm Ligler</option>
+              <option value="">All Leagues</option>
             </select>
           </div>
           <div>
-            <label class="block text-xs text-[#8b949e] mb-1.5 font-medium">Sezon</label>
+            <label class="block text-xs text-[#8b949e] mb-1.5 font-medium">Season</label>
             <select id="r-season-select" class="w-28" onchange="populateReportTeams('r-league','r-team','r-season-select')">
-              <option value="">Tümü</option>
+              <option value="">All</option>
             </select>
           </div>
           <div>
-            <label class="block text-xs text-[#8b949e] mb-1.5 font-medium">Takım</label>
+            <label class="block text-xs text-[#8b949e] mb-1.5 font-medium">Team</label>
             <select id="r-team" class="w-52">
-              <option value="">— Seçiniz —</option>
+              <option value="">— Select —</option>
             </select>
           </div>
-          <button class="btn-primary btn" onclick="downloadTeamReport()">⬇ PDF İndir</button>
+          <button class="btn-primary btn" onclick="downloadTeamReport()">⬇ Download PDF</button>
         </div>
         <div id="r-status" class="text-xs text-[#8b949e]"></div>
       </div>
 
-      <!-- Karşılaştırma Raporu -->
+      <!-- Comparison report -->
       <div class="card p-5">
-        <h2 class="text-sm font-semibold text-[#8b949e] uppercase tracking-widest mb-4">⚔️ Karşılaştırma Raporu</h2>
-        <p class="text-xs text-[#8b949e] mb-4">İki takımı karşılaştırır: güçlü/zayıf yönler, radar analizi ve kazanma stratejisi önerileri.</p>
+        <h2 class="text-sm font-semibold text-[#8b949e] uppercase tracking-widest mb-4">⚔️ Comparison Report</h2>
+        <p class="text-xs text-[#8b949e] mb-4">Compares two teams: strengths/weaknesses, radar analysis and suggested game plans.</p>
         <div class="flex flex-wrap gap-3 items-end mb-4">
           <div>
-            <label class="block text-xs text-[#8b949e] mb-1.5 font-medium">Lig</label>
+            <label class="block text-xs text-[#8b949e] mb-1.5 font-medium">League</label>
             <select id="rc-league" class="w-48" onchange="populateReportTeams('rc-league','rc-team-a','rc-season-select'); populateReportTeams('rc-league','rc-team-b','rc-season-select')">
-              <option value="">Tüm Ligler</option>
+              <option value="">All Leagues</option>
             </select>
           </div>
           <div>
-            <label class="block text-xs text-[#8b949e] mb-1.5 font-medium">Sezon</label>
+            <label class="block text-xs text-[#8b949e] mb-1.5 font-medium">Season</label>
             <select id="rc-season-select" class="w-28" onchange="populateReportTeams('rc-league','rc-team-a','rc-season-select'); populateReportTeams('rc-league','rc-team-b','rc-season-select')">
-              <option value="">Tümü</option>
+              <option value="">All</option>
             </select>
           </div>
           <div>
-            <label class="block text-xs text-[#8b949e] mb-1.5 font-medium">Takım A</label>
+            <label class="block text-xs text-[#8b949e] mb-1.5 font-medium">Team A</label>
             <select id="rc-team-a" class="w-48">
-              <option value="">— Seçiniz —</option>
+              <option value="">— Select —</option>
             </select>
           </div>
           <div>
-            <label class="block text-xs text-[#8b949e] mb-1.5 font-medium">Takım B</label>
+            <label class="block text-xs text-[#8b949e] mb-1.5 font-medium">Team B</label>
             <select id="rc-team-b" class="w-48">
-              <option value="">— Seçiniz —</option>
+              <option value="">— Select —</option>
             </select>
           </div>
-          <button class="btn btn-primary" onclick="downloadCompareReport()">⬇ PDF İndir</button>
+          <button class="btn btn-primary" onclick="downloadCompareReport()">⬇ Download PDF</button>
         </div>
         <div id="rc-status" class="text-xs text-[#8b949e]"></div>
       </div>
     </div>
 
-    <!-- Açıklama -->
+    <!-- Description -->
     <div class="card p-4">
-      <h3 class="text-xs font-semibold text-[#8b949e] uppercase tracking-widest mb-3">Rapor İçeriği</h3>
+      <h3 class="text-xs font-semibold text-[#8b949e] uppercase tracking-widest mb-3">Report Contents</h3>
       <div class="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
         <div class="p-3 rounded-lg" style="background:var(--surface2)">
           <div class="text-lg mb-1">🗺️</div>
-          <div class="font-medium mb-1">Şut & Isı Haritaları</div>
-          <div class="text-[#8b949e]">mplsoccer pitch üzerinde hücum/savunma yoğunluğu</div>
+          <div class="font-medium mb-1">Shot & Heat Maps</div>
+          <div class="text-[#8b949e]">Attacking/defensive density on an mplsoccer pitch</div>
         </div>
         <div class="p-3 rounded-lg" style="background:var(--surface2)">
           <div class="text-lg mb-1">🎯</div>
-          <div class="font-medium mb-1">Kale Ağzı & xG</div>
-          <div class="text-[#8b949e]">Gol koordinatları, xG dağılımı ve maç bazlı karşılaştırma</div>
+          <div class="font-medium mb-1">Goal Mouth & xG</div>
+          <div class="text-[#8b949e]">Goal coordinates, xG distribution and per-match comparison</div>
         </div>
         <div class="p-3 rounded-lg" style="background:var(--surface2)">
           <div class="text-lg mb-1">👤</div>
-          <div class="font-medium mb-1">Oyuncu Analizi</div>
-          <div class="text-[#8b949e]">Rating, gol/asist, p90 metrikler, pas isabeti</div>
+          <div class="font-medium mb-1">Player Analysis</div>
+          <div class="text-[#8b949e]">Rating, goals/assists, p90 metrics, pass accuracy</div>
         </div>
         <div class="p-3 rounded-lg" style="background:var(--surface2)">
           <div class="text-lg mb-1">🤖</div>
-          <div class="font-medium mb-1">Otomatik Çıkarımlar</div>
-          <div class="text-[#8b949e]">Güçlü/zayıf yönler, form analizi, stratejik öneriler</div>
+          <div class="font-medium mb-1">Automatic Insights</div>
+          <div class="text-[#8b949e]">Strengths/weaknesses, form analysis, strategic suggestions</div>
         </div>
       </div>
     </div>
@@ -963,12 +963,12 @@
   <!-- TACTICAL LAB TAB -->
   <div id="tab-tactical" class="hidden fade-in">
     <div class="card p-4 mb-3" style="border-left:3px solid #56d364">
-      <div class="text-sm font-semibold mb-1">🧪 Tactical Lab — Nasıl Kullanılır?</div>
+      <div class="text-sm font-semibold mb-1">🧪 Tactical Lab — How to Use</div>
       <ol class="text-xs text-[#8b949e] leading-relaxed" style="padding-left:18px;list-style:decimal">
-        <li><b style="color:#79c0ff">Sol panel</b>: "çapa takım" kutusuna kendi takımını yaz → kadroya kilitlenir. 🌍 transfer moduna geçince tüm liglerden oyuncu önerilir.</li>
-        <li><b style="color:#79c0ff">Orta saha</b>: Formasyon seç. Oyuncuyu listeden saha üstüne <b>sürükle</b> veya boş slota tıklayıp GNN önerilerinden seç.</li>
-        <li><b style="color:#79c0ff">Sağ panel</b>: Model sinerji skoru + öneri detayları. <b>optimize_lineup()</b> GNN'in en iyi 11'i seçmesini sağlar.</li>
-        <li><span style="color:#d2a8ff">Mor rozet</span> = transfer oyuncu (çapa takımda olmayan). <span style="color:#56d364">Yeşil</span> = mevcut kadrodan.</li>
+        <li><b style="color:#79c0ff">Left panel</b>: type your own team into the "anchor team" box → the squad locks to it. Switch to 🌍 transfer mode to get suggestions from all leagues.</li>
+        <li><b style="color:#79c0ff">Centre</b>: pick a formation. <b>Drag</b> a player from the list onto the pitch, or click an empty slot and pick from the GNN suggestions.</li>
+        <li><b style="color:#79c0ff">Right panel</b>: model synergy score + suggestion details. <b>optimize_lineup()</b> lets the GNN pick the best XI.</li>
+        <li><span style="color:#d2a8ff">Purple badge</span> = transfer player (not in the anchor team). <span style="color:#56d364">Green</span> = from the current squad.</li>
       </ol>
     </div>
     <div class="tl-window">
@@ -979,21 +979,21 @@
         <span class="tl-cmd"><span class="tl-prompt">~/squad_gnn $</span> python infer.py --formation <span id="tl-cmd-formation">4-2-3-1</span> --model gnn-v2.4</span>
         <div class="ml-auto flex items-center gap-2">
           <span id="tl-status" class="tl-status">● ready</span>
-          <button class="tl-lang-btn active" onclick="tlSetLang('tr', this)">TR</button>
-          <button class="tl-lang-btn" onclick="tlSetLang('en', this)">EN</button>
+          <button class="tl-lang-btn" onclick="tlSetLang('tr', this)">TR</button>
+          <button class="tl-lang-btn active" onclick="tlSetLang('en', this)">EN</button>
         </div>
       </div>
       <div class="tl-grid">
         <!-- LEFT: node pool -->
         <aside class="tl-pane tl-pool">
           <div class="tl-comment"># node_pool.csv</div>
-          <div class="tl-pool-count"><span id="tl-pool-count">0</span> düğüm</div>
-          <input id="tl-pool-search" placeholder="$ grep Oyuncu ara…" class="tl-input" oninput="tlOnPoolSearch(this.value)"/>
-          <div class="tl-comment" style="margin: 10px 0 4px">// çapa takım (yazarak ara, birden fazla ekleyebilirsin)</div>
+          <div class="tl-pool-count"><span id="tl-pool-count">0</span> nodes</div>
+          <input id="tl-pool-search" placeholder="$ grep search players…" class="tl-input" oninput="tlOnPoolSearch(this.value)"/>
+          <div class="tl-comment" style="margin: 10px 0 4px">// anchor team (type to search, you can add several)</div>
           <div id="tl-anchor-host"></div>
           <div id="tl-anchor-chips" style="display:flex;flex-wrap:wrap;gap:3px;margin-top:4px"></div>
           <div class="tl-mode-toggle" style="margin: 8px 0 2px">
-            <button class="tl-mode-btn active" data-mode="kadro" onclick="tlSetMode('kadro')">👥 kadro</button>
+            <button class="tl-mode-btn active" data-mode="kadro" onclick="tlSetMode('kadro')">👥 squad</button>
             <button class="tl-mode-btn" data-mode="transfer" onclick="tlSetMode('transfer')">🌍 transfer</button>
           </div>
           <div class="tl-pool-row tl-pool-head" style="margin-top:10px">
@@ -1011,25 +1011,25 @@
             <span class="tl-prompt-line">&gt; GRAPH_NN.forward()</span>
             <div class="tl-formation-pills" id="tl-formation-pills"></div>
             <div class="ml-auto flex items-center gap-2">
-              <button class="tl-btn tl-btn-primary" onclick="tlToggleAvgPos()" id="tl-btn-avgpos" title="Her oyuncunun gerçek ortalama pozisyon noktasını göster">📍 avg-pos</button>
-              <button class="tl-btn" onclick="tlToggleHeatmap()" id="tl-btn-heatmap" title="Maç bazlı yoğunluk haritası (oyuncuların gerçek X/Y dağılımı)">📊 heatmap</button>
-              <button class="tl-btn" onclick="tlToggleEdges()" id="tl-btn-edges" title="Yerleşik oyuncular arası GNN sinerji skoru">🕸 edges</button>
+              <button class="tl-btn tl-btn-primary" onclick="tlToggleAvgPos()" id="tl-btn-avgpos" title="Show each player's real average position">📍 avg-pos</button>
+              <button class="tl-btn" onclick="tlToggleHeatmap()" id="tl-btn-heatmap" title="Per-match density map (players' real X/Y distribution)">📊 heatmap</button>
+              <button class="tl-btn" onclick="tlToggleEdges()" id="tl-btn-edges" title="GNN synergy score between placed players">🕸 edges</button>
               <button class="tl-btn" onclick="tlClear()">clear()</button>
               <button class="tl-btn tl-btn-primary" onclick="tlOptimize()">optimize_lineup()</button>
             </div>
           </div>
-          <!-- Stil Hedefi (Tactical Lab içine taşındı) -->
+          <!-- Style target (moved into the Tactical Lab) -->
           <div class="tl-toolbar" style="padding-top:2px">
-            <span class="tl-prompt-line" title="Kadronu hangi oyun stiline göre değerlendireceğiz?">🎯 style.target</span>
+            <span class="tl-prompt-line" title="Which playing style should the squad be assessed against?">🎯 style.target</span>
             <select id="tl-style-mode" class="tl-input" style="width:140px" onchange="tlOnStyleModeChange()">
-              <option value="">— stil yok —</option>
-              <option value="template">Şablon</option>
-              <option value="team">Referans Takım</option>
+              <option value="">— no style —</option>
+              <option value="template">Template</option>
+              <option value="team">Reference Team</option>
             </select>
             <select id="tl-style-template" class="tl-input hidden" style="width:200px" onchange="tlOnStyleTargetChange()"></select>
             <div id="tl-style-team-host" class="hidden" style="width:200px"></div>
             <span id="tl-style-active" class="text-xs" style="color:#7ee787"></span>
-            <div class="ml-auto"><button class="tl-btn" onclick="tlAnalyze()" id="tl-btn-analyze" title="Stil bazlı tam analiz çalıştır">analyze()</button></div>
+            <div class="ml-auto"><button class="tl-btn" onclick="tlAnalyze()" id="tl-btn-analyze" title="Run the full style-based analysis">analyze()</button></div>
           </div>
           <div class="tl-pitch-wrap">
             <div class="tl-pitch-labels">
@@ -1043,7 +1043,7 @@
         <!-- RIGHT: inference output -->
         <aside class="tl-pane tl-out">
           <div class="tl-comment"># inference.out</div>
-          <div class="tl-title">Model çıktı</div>
+          <div class="tl-title">Model output</div>
           <pre class="tl-pre" id="tl-pre"></pre>
           <div class="tl-gauge-wrap">
             <svg viewBox="0 0 100 100" class="tl-gauge">
@@ -1051,9 +1051,9 @@
               <circle cx="50" cy="50" r="42" class="tl-gauge-arc" id="tl-gauge-arc"/>
             </svg>
             <div class="tl-gauge-value" id="tl-gauge-value">0</div>
-            <div class="tl-gauge-label">GENEL UYUM</div>
+            <div class="tl-gauge-label">OVERALL FIT</div>
           </div>
-          <!-- Stil analiz paneli (analyze() ile dolar) -->
+          <!-- Style analysis panel (filled by analyze()) -->
           <div id="tl-analysis" class="hidden" style="margin-top:10px">
             <div class="tl-comment" style="margin-top:6px"># style.analysis</div>
             <div id="tl-team-fit" style="background:#0d1117;padding:8px 10px;border:1px solid #1f2933;border-radius:6px;margin-bottom:6px"></div>
@@ -1065,7 +1065,7 @@
           </div>
           <div class="tl-tip">
             <div class="tl-comment"># tip</div>
-            <p class="tl-tip-text">Stil hedefi seç ve <b>analyze()</b> butonuna bas — her oyuncu için metrik-bazlı uyum, ikili sinerji ve değiştirme önerileri çıkar. Sahadaki bir oyuncuya tıklayıp adayları aç.</p>
+            <p class="tl-tip-text">Pick a style target and press <b>analyze()</b> — you get a metric-based fit per player, pairwise synergy and replacement suggestions. Click a player on the pitch to open the candidates.</p>
           </div>
         </aside>
       </div>
@@ -1083,7 +1083,7 @@
 
 </main>
 
-<!-- MAÇ DETAY MODALı -->
+<!-- MATCH DETAIL MODAL -->
 <div id="match-modal" class="modal-bg hidden" onclick="closeModal(event)">
   <div class="modal p-5">
     <div class="flex justify-between items-start mb-3 gap-3">
@@ -1099,15 +1099,15 @@
 
     <!-- Modal Tabs -->
     <div class="flex gap-1 mb-4 border-b border-[#30363d]">
-      <button class="tab-btn active" id="m-tab-btn-players" onclick="showMatchTab('players')">👥 Oyuncular</button>
-      <button class="tab-btn" id="m-tab-btn-shots" onclick="showMatchTab('shots')">🎯 Şutlar</button>
-      <button class="tab-btn" id="m-tab-btn-team" onclick="showMatchTab('team')">📊 Takım İstatistikleri</button>
+      <button class="tab-btn active" id="m-tab-btn-players" onclick="showMatchTab('players')">👥 Players</button>
+      <button class="tab-btn" id="m-tab-btn-shots" onclick="showMatchTab('shots')">🎯 Shots</button>
+      <button class="tab-btn" id="m-tab-btn-team" onclick="showMatchTab('team')">📊 Team Stats</button>
     </div>
     <div id="modal-content"><div class="spinner"></div></div>
   </div>
 </div>
 
-<!-- OYUNCU / TAKIM DETAY MODALı -->
+<!-- PLAYER / TEAM DETAIL MODAL -->
 <div id="player-modal" class="modal-bg hidden" onclick="closePlayerModal(event)">
   <div class="modal p-5">
     <div class="flex justify-between items-center mb-4">
@@ -1152,7 +1152,7 @@ const _POS_GROUP = {
   RB:'pos-RB', LB:'pos-LB', RCB:'pos-RCB', LCB:'pos-LCB',
   CDM:'pos-CDM', CM:'pos-CM', CAM:'pos-CAM',
   RW:'pos-RW', LW:'pos-LW', ST:'pos-ST',
-  // Eski base kodlar (fallback)
+  // Old base codes (fallback)
   G:'pos-GK', D:'pos-RCB', M:'pos-CM', F:'pos-ST',
 };
 function posClass(pos) {
@@ -1245,7 +1245,7 @@ async function refreshTeamSub(force = true) {
   if (sub === 'h2h') { populateH2HTeamSelects(); return; }
 }
 
-// ─── Neden Başarılı? ─────────────────────────────────────────────────────────
+// ─── Why Successful? ─────────────────────────────────────────────────────────
 async function populateWhyTeamSelect() {
   const sel = document.getElementById('why-team');
   if (!sel || sel.options.length > 1) return;
@@ -1254,18 +1254,18 @@ async function populateWhyTeamSelect() {
     const j = await r.json();
     const teams = (j.data || j.teams || []).map(t => t.team_name || t.name).filter(Boolean);
     teams.sort();
-    sel.innerHTML = '<option value="">— Seçiniz —</option>' + teams.map(t => `<option>${t}</option>`).join('');
+    sel.innerHTML = '<option value="">— Select —</option>' + teams.map(t => `<option>${t}</option>`).join('');
   } catch (e) { console.error(e); }
 }
 
 const STYLE_FEATURE_LABELS = {
-  goals_for: 'Atılan gol', goals_against: 'Yenilen gol', xg: 'xG', xg_against: 'xG against',
-  possession: 'Top hakimiyeti', passes_pct: 'Pas isabeti', shots: 'Şut', shots_on_target: 'İsabetli şut',
-  progressive_passes: 'İlerleyici pas', progressive_carries: 'İlerleyici taşıma',
-  passes_into_final_third: 'Final 3. paslar', passes_into_penalty_area: 'Ceza sahası paslar',
-  tackles: 'Müdahale', interceptions: 'Top kapma', blocks: 'Blok',
-  take_ons_attempted: 'Dripling girişimi', take_ons_won: 'Başarılı dripling',
-  average_shot_distance: 'Şut mesafesi',
+  goals_for: 'Goals scored', goals_against: 'Goals conceded', xg: 'xG', xg_against: 'xG against',
+  possession: 'Possession', passes_pct: 'Pass accuracy', shots: 'Shots', shots_on_target: 'Shots on target',
+  progressive_passes: 'Progressive passes', progressive_carries: 'Progressive carries',
+  passes_into_final_third: 'Final-third passes', passes_into_penalty_area: 'Passes into the box',
+  tackles: 'Tackles', interceptions: 'Interceptions', blocks: 'Blocks',
+  take_ons_attempted: 'Dribbles attempted', take_ons_won: 'Successful dribbles',
+  average_shot_distance: 'Shot distance',
 };
 
 async function loadWhySuccessful() {
@@ -1276,7 +1276,7 @@ async function loadWhySuccessful() {
   if (glSeason()) p.set('season', glSeason());
   const r = await fetch(`/teams/${encodeURIComponent(team)}/why-successful?${p}`);
   if (!r.ok) {
-    document.getElementById('why-content').innerHTML = `<div class="empty-state"><p>Veri alınamadı (${r.status}).</p></div>`;
+    document.getElementById('why-content').innerHTML = `<div class="empty-state"><p>Could not load data (${r.status}).</p></div>`;
     return;
   }
   const j = await r.json();
@@ -1286,27 +1286,27 @@ async function loadWhySuccessful() {
   const vals = Object.values(fp);
   const html = `
     <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
-      ${metricCardHtml('Maç', s.matches_played, '#58a6ff')}
-      ${metricCardHtml('Puan', s.points, '#7ee787')}
-      ${metricCardHtml('xG farkı', s.xg_diff != null ? Number(s.xg_diff).toFixed(2) : '—', '#ffa657')}
+      ${metricCardHtml('Matches', s.matches_played, '#58a6ff')}
+      ${metricCardHtml('Points', s.points, '#7ee787')}
+      ${metricCardHtml('xG difference', s.xg_diff != null ? Number(s.xg_diff).toFixed(2) : '—', '#ffa657')}
       ${metricCardHtml('G/B/M', `${s.wins||0}-${s.draws||0}-${s.losses||0}`, '#d2a8ff')}
     </div>
     <div class="card p-4 mb-4">
-      <h3 class="text-sm font-semibold text-[#c9d1d9] mb-2">📝 Özet</h3>
+      <h3 class="text-sm font-semibold text-[#c9d1d9] mb-2">📝 Summary</h3>
       <p class="text-sm text-[#8b949e]">${j.summary_text || ''}</p>
     </div>
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
       <div class="card p-4">
-        <h3 class="text-sm font-semibold text-[#7ee787] mb-2">✅ Güçlü Yönler</h3>
+        <h3 class="text-sm font-semibold text-[#7ee787] mb-2">✅ Strengths</h3>
         <ul class="text-xs space-y-1">${(j.strengths||[]).map(x => `<li>• ${x.label} <span class="text-[#8b949e]">(p${Math.round(x.percentile)})</span></li>`).join('') || '<li class="text-[#8b949e]">—</li>'}</ul>
       </div>
       <div class="card p-4">
-        <h3 class="text-sm font-semibold text-[#ff7b72] mb-2">⚠️ Zayıf Yönler</h3>
+        <h3 class="text-sm font-semibold text-[#ff7b72] mb-2">⚠️ Weaknesses</h3>
         <ul class="text-xs space-y-1">${(j.weaknesses||[]).map(x => `<li>• ${x.label} <span class="text-[#8b949e]">(p${Math.round(x.percentile)})</span></li>`).join('') || '<li class="text-[#8b949e]">—</li>'}</ul>
       </div>
     </div>
     <div class="card p-4">
-      <h3 class="text-sm font-semibold mb-3">🕸️ Stil Parmak İzi (lig %tile)</h3>
+      <h3 class="text-sm font-semibold mb-3">🕸️ Style Fingerprint (league %tile)</h3>
       <div style="position:relative;height:380px"><canvas id="chart-why-radar"></canvas></div>
     </div>
   `;
@@ -1339,7 +1339,7 @@ async function populateH2HTeamSelects() {
     const j = await r.json();
     const teams = (j.data || j.teams || []).map(t => t.team_name || t.name).filter(Boolean);
     teams.sort();
-    const opts = '<option value="">— Seçiniz —</option>' + teams.map(t => `<option>${t}</option>`).join('');
+    const opts = '<option value="">— Select —</option>' + teams.map(t => `<option>${t}</option>`).join('');
     a.innerHTML = opts; b.innerHTML = opts;
   } catch (e) { console.error(e); }
 }
@@ -1348,7 +1348,7 @@ async function loadH2H() {
   const a = document.getElementById('h2h-team-a').value;
   const b = document.getElementById('h2h-team-b').value;
   if (!a || !b || a === b) {
-    document.getElementById('h2h-content').innerHTML = '<div class="empty-state"><p>Farklı iki takım seçin.</p></div>';
+    document.getElementById('h2h-content').innerHTML = '<div class="empty-state"><p>Select two different teams.</p></div>';
     return;
   }
   const p = new URLSearchParams();
@@ -1356,7 +1356,7 @@ async function loadH2H() {
   if (glSeason()) p.set('season', glSeason());
   const r = await fetch(`/h2h/${encodeURIComponent(a)}/${encodeURIComponent(b)}?${p}`);
   if (!r.ok) {
-    document.getElementById('h2h-content').innerHTML = `<div class="empty-state"><p>Veri alınamadı (${r.status}).</p></div>`;
+    document.getElementById('h2h-content').innerHTML = `<div class="empty-state"><p>Could not load data (${r.status}).</p></div>`;
     return;
   }
   const j = await r.json();
@@ -1366,30 +1366,30 @@ async function loadH2H() {
   const recoB = j.recommendations_for_b || {};
   const histRows = (j.history || []).map(m =>
     `<tr><td>${(m.date||'').slice(0,10)}</td><td>${m.home_team_name}</td><td class="text-center font-bold">${m.home_goals}-${m.away_goals}</td><td>${m.away_team_name}</td></tr>`
-  ).join('') || '<tr><td colspan="4" class="text-center text-[#8b949e]">Geçmiş maç yok</td></tr>';
+  ).join('') || '<tr><td colspan="4" class="text-center text-[#8b949e]">No past matches</td></tr>';
 
   document.getElementById('h2h-content').innerHTML = `
     <div class="card p-4 mb-4">
-      <h3 class="text-sm font-semibold mb-3">🕸️ Stil Karşılaştırma</h3>
+      <h3 class="text-sm font-semibold mb-3">🕸️ Style Comparison</h3>
       <div style="position:relative;height:420px"><canvas id="chart-h2h-radar"></canvas></div>
     </div>
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
       <div class="card p-4">
-        <h3 class="text-sm font-semibold text-[#7ee787] mb-2">✅ ${a} — Nasıl Kazanır</h3>
-        <ul class="text-xs space-y-1.5">${(reco.exploit||[]).map(x => `<li>• ${x.sentence}</li>`).join('') || '<li class="text-[#8b949e]">Belirgin avantaj yok.</li>'}</ul>
+        <h3 class="text-sm font-semibold text-[#7ee787] mb-2">✅ ${a} — How They Win</h3>
+        <ul class="text-xs space-y-1.5">${(reco.exploit||[]).map(x => `<li>• ${x.sentence}</li>`).join('') || '<li class="text-[#8b949e]">No clear advantage.</li>'}</ul>
         <h3 class="text-sm font-semibold text-[#ff7b72] mt-4 mb-2">⚠️ ${a} — Nelere Dikkat</h3>
-        <ul class="text-xs space-y-1.5">${(reco.beware||[]).map(x => `<li>• ${x.sentence}</li>`).join('') || '<li class="text-[#8b949e]">Belirgin tehdit yok.</li>'}</ul>
+        <ul class="text-xs space-y-1.5">${(reco.beware||[]).map(x => `<li>• ${x.sentence}</li>`).join('') || '<li class="text-[#8b949e]">No clear threat.</li>'}</ul>
       </div>
       <div class="card p-4">
-        <h3 class="text-sm font-semibold text-[#7ee787] mb-2">✅ ${b} — Nasıl Kazanır</h3>
-        <ul class="text-xs space-y-1.5">${(recoB.exploit||[]).map(x => `<li>• ${x.sentence}</li>`).join('') || '<li class="text-[#8b949e]">Belirgin avantaj yok.</li>'}</ul>
+        <h3 class="text-sm font-semibold text-[#7ee787] mb-2">✅ ${b} — How They Win</h3>
+        <ul class="text-xs space-y-1.5">${(recoB.exploit||[]).map(x => `<li>• ${x.sentence}</li>`).join('') || '<li class="text-[#8b949e]">No clear advantage.</li>'}</ul>
         <h3 class="text-sm font-semibold text-[#ff7b72] mt-4 mb-2">⚠️ ${b} — Nelere Dikkat</h3>
-        <ul class="text-xs space-y-1.5">${(recoB.beware||[]).map(x => `<li>• ${x.sentence}</li>`).join('') || '<li class="text-[#8b949e]">Belirgin tehdit yok.</li>'}</ul>
+        <ul class="text-xs space-y-1.5">${(recoB.beware||[]).map(x => `<li>• ${x.sentence}</li>`).join('') || '<li class="text-[#8b949e]">No clear threat.</li>'}</ul>
       </div>
     </div>
     <div class="card overflow-hidden">
-      <h3 class="text-sm font-semibold p-3">📜 Geçmiş Maçlar</h3>
-      <table><thead><tr><th>Tarih</th><th>Ev</th><th>Skor</th><th>Deplasman</th></tr></thead><tbody>${histRows}</tbody></table>
+      <h3 class="text-sm font-semibold p-3">📜 Past Meetings</h3>
+      <table><thead><tr><th>Date</th><th>Home</th><th>Score</th><th>Away</th></tr></thead><tbody>${histRows}</tbody></table>
     </div>
   `;
   const ctx = document.getElementById('chart-h2h-radar');
@@ -1463,7 +1463,7 @@ async function loadTactic() {
         <td>${fmt(t.avg_fouls, 1)}</td>
       </tr>`).join('');
 
-    // Radar için checkbox listesini güncelle
+    // Refresh the checkbox list for the radar
     const cbWrap = document.getElementById('radar-team-checkboxes');
     if (cbWrap) {
       const teams = d.data.map(t => t.team_name);
@@ -1516,7 +1516,7 @@ function drawXgScatter(data) {
     type: 'scatter',
     data: {
       datasets: [{
-        label: 'Takımlar',
+        label: 'Teams',
         data: data.map(t => ({ x: parseFloat(t.xg), y: parseInt(t.goals), label: t.team })),
         backgroundColor: data.map(t => {
           const d = parseFloat(t.xg_diff || 0);
@@ -1525,7 +1525,7 @@ function drawXgScatter(data) {
         pointRadius: 7,
         pointHoverRadius: 10,
       }, {
-        label: 'y = x (eşit)',
+        label: 'y = x (equal)',
         data: [{x:0,y:0},{x:maxVal,y:maxVal}],
         type: 'line',
         borderColor: 'rgba(139,148,158,.4)',
@@ -1542,14 +1542,14 @@ function drawXgScatter(data) {
           callbacks: {
             label: ctx => {
               const d = ctx.raw;
-              return `${d.label}: xG ${d.x?.toFixed(1)} | Gol ${d.y}`;
+              return `${d.label}: xG ${d.x?.toFixed(1)} | Goals ${d.y}`;
             }
           }
         }
       },
       scales: {
-        x: { title: { display: true, text: 'Toplam xG', color: '#8b949e' }, ticks: { color: '#8b949e' }, grid: { color: '#21262d' } },
-        y: { title: { display: true, text: 'Gerçek Gol', color: '#8b949e' }, ticks: { color: '#8b949e' }, grid: { color: '#21262d' } },
+        x: { title: { display: true, text: 'Total xG', color: '#8b949e' }, ticks: { color: '#8b949e' }, grid: { color: '#21262d' } },
+        y: { title: { display: true, text: 'Actual Goals', color: '#8b949e' }, ticks: { color: '#8b949e' }, grid: { color: '#21262d' } },
       }
     }
   });
@@ -1574,7 +1574,7 @@ async function loadTeamRadar() {
     }
     _radarCache = d.data;
     drawTeamRadar();
-  } catch(e) { console.warn('Radar yüklenemedi:', e); }
+  } catch(e) { console.warn('Radar could not be loaded:', e); }
 }
 
 function drawTeamRadar() {
@@ -1583,7 +1583,7 @@ function drawTeamRadar() {
   const checked = [...document.querySelectorAll('.radar-team-cb:checked')].slice(0, 5).map(cb => cb.value);
   if (!checked.length) return;
   const radarKeys = ['avg_xg','avg_shots_ot','avg_pass_acc','avg_key_passes','avg_tackles','avg_interceptions','avg_possession'];
-  const radarLabels = ['xG/maç','İsabetli Şut','Pas%','Anahtar Pas','Müdahale','Top Kesme','Top Hakimiyeti'];
+  const radarLabels = ['xG/match','Shots on Target','Pass%','Key Passes','Tackles','Interceptions','Possession'];
   const ctx = document.getElementById('chart-team-radar');
   if (!ctx) return;
   if (_teamRadarChart) _teamRadarChart.destroy();
@@ -1646,7 +1646,7 @@ async function initScout() {
     const grpSel = document.getElementById('sc-group');
     grpSel.innerHTML = Object.keys(d.groups).map(g => `<option value="${escHtml(g)}">${escHtml(g)}</option>`).join('');
     onScoutGroupChange();
-  } catch(e) { console.warn('Roller yüklenemedi', e); }
+  } catch(e) { console.warn('Roles could not be loaded', e); }
 }
 
 function onScoutGroupChange() {
@@ -1658,9 +1658,9 @@ function onScoutGroupChange() {
 }
 
 function onScoutRoleChange() {
-  // Oyuncu listesi doldurmak için pool gerekiyor — loadScout çağrılmadıysa boş bırak
+  // The player list needs the pool — leave it empty if loadScout has not run
   const sel = document.getElementById('sc-compare-sel');
-  if (sel) sel.innerHTML = '<option value="">— Önce Ara →</option>';
+  if (sel) sel.innerHTML = '<option value="">— Search first →</option>';
 }
 
 async function loadScout() {
@@ -1678,7 +1678,7 @@ async function loadScout() {
   document.getElementById('scout-table-wrap').innerHTML = '<div class="spinner"></div>';
   try {
     const d = await api('/stats/role-top10?' + p);
-    // Client-side filtre: yaş + tercih ayak
+    // Client-side filter: age + preferred foot
     const ageMin = parseInt(document.getElementById('sc-age-min')?.value || '', 10);
     const ageMax = parseInt(document.getElementById('sc-age-max')?.value || '', 10);
     const foot = (document.getElementById('sc-foot')?.value || '').toLowerCase();
@@ -1699,7 +1699,7 @@ async function loadScout() {
 
     // Tablo
     const metrics = d.metrics;
-    const thead = `<tr><th>#</th><th>Oyuncu</th><th>Takım</th><th>Mev.</th><th>Maç</th><th>Rating</th><th>Final Skor</th>${metrics.map(m => `<th>${escHtml(m.label)}</th>`).join('')}</tr>`;
+    const thead = `<tr><th>#</th><th>Player</th><th>Team</th><th>Pos.</th><th>Apps</th><th>Rating</th><th>Final Score</th>${metrics.map(m => `<th>${escHtml(m.label)}</th>`).join('')}</tr>`;
     const rows = d.data.map((p, i) => `
       <tr class="cursor-pointer" onclick="openPlayerModal(${p.source_player_id}, '${escHtml(p.player_name)}')">
         <td class="text-[#8b949e] font-mono text-xs">${i + 1}</td>
@@ -1713,10 +1713,10 @@ async function loadScout() {
       </tr>`).join('');
     document.getElementById('scout-table-wrap').innerHTML = `<table><thead>${thead}</thead><tbody>${rows}</tbody></table>`;
 
-    // Oyuncu seçme listesi
+    // Player picker list
     const compSel = document.getElementById('sc-compare-sel');
     if (compSel) {
-      compSel.innerHTML = '<option value="">— Seçiniz —</option>' +
+      compSel.innerHTML = '<option value="">— Select —</option>' +
         d.data.map(p => `<option value="${p.source_player_id}" data-name="${escHtml(p.player_name)}">${escHtml(p.player_name)} (${escHtml(p.team_name || '')})</option>`).join('');
     }
 
@@ -1736,7 +1736,7 @@ function drawScoutBar(data) {
     type: 'bar',
     data: {
       labels: sorted.map(p => p.player_name.split(' ').pop()),
-      datasets: [{ label: 'Final Skor', data: sorted.map(p => p._score || 0),
+      datasets: [{ label: 'Final Score', data: sorted.map(p => p._score || 0),
         backgroundColor: 'rgba(88,166,255,.7)', borderRadius: 4 }]
     },
     options: {
@@ -1796,11 +1796,11 @@ function drawScoutRadar(data, metrics) {
   });
 }
 
-// Oyuncu karşılaştırma (Mevki Analizi)
+// Player comparison (position analysis)
 function addComparePlayer() {
   const sel = document.getElementById('sc-compare-sel');
   if (!sel || !sel.value) return;
-  if (_comparePlayerIds.length >= 6) { alert('Maksimum 6 oyuncu karşılaştırabilirsiniz.'); return; }
+  if (_comparePlayerIds.length >= 6) { alert('You can compare at most 6 players.'); return; }
   const pid = parseInt(sel.value);
   if (_comparePlayerIds.find(p => p.id === pid)) return;
   const name = sel.options[sel.selectedIndex].dataset.name || sel.options[sel.selectedIndex].text;
@@ -1864,7 +1864,7 @@ function drawCompareRadar() {
     }
   });
 
-  // Ham değerler tablosu
+  // Raw values table
   const rows = _comparePlayerIds.map(cp => {
     const p = pool.find(pl => pl.source_player_id === cp.id);
     if (!p) return '';
@@ -1874,7 +1874,7 @@ function drawCompareRadar() {
       ${metrics.map(m => `<td>${fmt(p[m.col], 2)}</td>`).join('')}
     </tr>`;
   }).join('');
-  const thead = `<tr><th>Oyuncu</th><th>Takım</th>${metrics.map(m => `<th>${escHtml(m.label)}</th>`).join('')}</tr>`;
+  const thead = `<tr><th>Player</th><th>Team</th>${metrics.map(m => `<th>${escHtml(m.label)}</th>`).join('')}</tr>`;
   document.getElementById('compare-table-wrap').innerHTML = `<table><thead>${thead}</thead><tbody>${rows}</tbody></table>`;
 }
 
@@ -1888,25 +1888,25 @@ async function initTransfer() {
   grpSel.innerHTML = Object.keys(_rolesData.groups).map(g => `<option value="${escHtml(g)}">${escHtml(g)}</option>`).join('');
   onTransferGroupChange();
 
-  // Takım search input'larını kur (GNN takım listesi)
+  // Set up the team search inputs (GNN team list)
   const teamSearchCfg = (hostId, placeholder) => ({
     host: hostId, placeholder,
     fetchUrl: (q) => `/gnn/teams?q=${encodeURIComponent(q)}&limit=20`,
     parseResults: (j) => (j.teams || []).map(t => ({
-      value: t.team, label: t.team, sub: `${t.players} oyuncu`,
+      value: t.team, label: t.team, sub: `${t.players} players`,
     })),
   });
   ['tr-squad-team-search', 'tr-fit-team-search', 'tr-style-team-search', 'tr-budget-team-search', 'tr-map-team-search', 'p-team-search']
     .forEach(id => {
       if (document.getElementById(id))
-        makeSearchInput(teamSearchCfg(id, 'Takım ara…'));
+        makeSearchInput(teamSearchCfg(id, 'Search team…'));
     });
 
-  // Referans oyuncu search input (GNN graph'tan)
+  // Reference player search input (from the GNN graph)
   if (document.getElementById('tr-target-player-search')) {
     makeSearchInput({
       host: 'tr-target-player-search',
-      placeholder: 'Oyuncu ara…',
+      placeholder: 'Search player…',
       fetchUrl: (q) => `/gnn/players?q=${encodeURIComponent(q)}&limit=20`,
       parseResults: (j) => (j.players || []).map(p => ({
         value: p.player_id, label: p.name, sub: `${p.team || '?'} · ${p.position || '-'}`,
@@ -1914,9 +1914,9 @@ async function initTransfer() {
     });
   }
 
-  // Stil şablonlarını yükle
+  // Load style templates
 
-  // Stil şablonlarını yükle
+  // Load style templates
   try {
     const sd = await api('/meta/style-templates');
     const tmplSel = document.getElementById('tr-style-template');
@@ -1950,14 +1950,14 @@ function updateStyleActiveLabel() {
   const lbl = document.getElementById('tr-style-active-label');
   if (!lbl) return;
   if (tgt) {
-    lbl.textContent = '🎯 Aktif: ' + tgt;
+    lbl.textContent = '🎯 Active: ' + tgt;
     lbl.style.display = 'inline';
   } else {
     lbl.style.display = 'none';
   }
 }
 
-// ─── Kadro Yerleştirme & Stile Uyum ──────────────────────────────────────────
+// ─── Squad placement & style fit ─────────────────────────────────────────────
 let _squadFitData = null;
 let _teamPlayerOptions = '';
 // id -> {value, label} (selected value for search inputs)
@@ -1976,7 +1976,7 @@ function makeSearchInput(cfg) {
   if (!host) return;
   host.innerHTML = `
     <div class="relative" style="position:relative">
-      <input type="text" class="w-full" placeholder="${cfg.placeholder || 'Ara…'}" autocomplete="off" />
+      <input type="text" class="w-full" placeholder="${cfg.placeholder || 'Search…'}" autocomplete="off" />
       <div class="search-dropdown hidden" style="position:absolute;top:100%;left:0;right:0;background:#161b22;border:1px solid #30363d;border-radius:6px;max-height:240px;overflow-y:auto;z-index:50;margin-top:2px;box-shadow:0 4px 12px rgba(0,0,0,.4)"></div>
     </div>`;
   const input = host.querySelector('input');
@@ -2004,7 +2004,7 @@ function makeSearchInput(cfg) {
       const j = await r.json();
       const items = cfg.parseResults(j).slice(0, 25);
       if (!items.length) {
-        drop.innerHTML = `<div class="p-2 text-xs text-[#8b949e]">Sonuç yok</div>`;
+        drop.innerHTML = `<div class="p-2 text-xs text-[#8b949e]">No results</div>`;
       } else {
         drop.innerHTML = items.map((it, i) => `
           <div class="search-item" data-i="${i}" style="padding:6px 10px;cursor:pointer;border-bottom:1px solid #21262d;font-size:.85rem">
@@ -2025,7 +2025,7 @@ function makeSearchInput(cfg) {
       }
       drop.classList.remove('hidden');
     } catch (e) {
-      drop.innerHTML = `<div class="p-2 text-xs text-[#ff7b72]">Arama hatası</div>`;
+      drop.innerHTML = `<div class="p-2 text-xs text-[#ff7b72]">Search error</div>`;
       drop.classList.remove('hidden');
     }
   }
@@ -2043,7 +2043,7 @@ function makeSearchInput(cfg) {
   input.addEventListener('blur', () => setTimeout(() => drop.classList.add('hidden'), 150));
 }
 
-// ─── SVG Pitch (mplsoccer 120×80 yatay yerleşimle benzer) ──────────────────────
+// ─── SVG pitch (similar to the mplsoccer 120×80 horizontal layout) ────────────
 const PITCH_POS_XY = {
   GK:  [8, 40],
   RB:  [32, 12], RCB: [28, 30], LCB: [28, 50], LB:  [32, 68],
@@ -2052,12 +2052,12 @@ const PITCH_POS_XY = {
 };
 
 function pitchBackgroundSvg() {
-  // 120x80 mplsoccer statsbomb yatay — pro stil: çim deseni + tüm işaretler
+  // 120x80 mplsoccer statsbomb horizontal — pro style: grass stripes + all markings
   // Penalty arc geometrisi: spot (12,40), r=9.15; box edge x=18.
   //   cos θ = (18-12)/9.15 = 0.6557 → sin θ = 0.755 → r·sinθ = 6.91
-  //   yani sol arc: M 18 33.09 → A 9.15 9.15 0 0 1 18 46.91 (kısa yay, saat yönü)
-  // Sağ arc: M 102 33.09 → A 9.15 9.15 0 0 0 102 46.91 (sweep ters)
-  // Corner arc r=1, dört köşede.
+  //   i.e. left arc: M 18 33.09 → A 9.15 9.15 0 0 1 18 46.91 (short arc, clockwise)
+  // Right arc: M 102 33.09 → A 9.15 9.15 0 0 0 102 46.91 (reverse sweep)
+  // Corner arc r=1, in all four corners.
   let stripes = '';
   for (let i = 0; i < 6; i++) {
     const x = i * 20;
@@ -2065,27 +2065,27 @@ function pitchBackgroundSvg() {
   }
   return `
     ${stripes}
-    <!-- Dış çizgi + orta çizgi + orta yuvarlak -->
+    <!-- Outer line + halfway line + centre circle -->
     <rect x="0" y="0" width="120" height="80" class="pitch-line-thick" />
     <line x1="60" y1="0" x2="60" y2="80" class="pitch-line-thick" />
     <circle cx="60" cy="40" r="9.15" class="pitch-line" />
     <circle cx="60" cy="40" r="0.5" class="pitch-line-spot" />
 
-    <!-- Sol ceza + 6 yard + penalty arc + spot + kale -->
+    <!-- Left penalty area + 6-yard box + penalty arc + spot + goal -->
     <rect x="0" y="18" width="18" height="44" class="pitch-line" />
     <rect x="0" y="30" width="6" height="20" class="pitch-line" />
     <circle cx="12" cy="40" r="0.5" class="pitch-line-spot" />
     <path d="M 18 33.09 A 9.15 9.15 0 0 1 18 46.91" class="pitch-line" />
     <rect x="-1.5" y="36" width="1.5" height="8" class="pitch-line-thick" />
 
-    <!-- Sağ ceza + 6 yard + penalty arc + spot + kale -->
+    <!-- Right penalty area + 6-yard box + penalty arc + spot + goal -->
     <rect x="102" y="18" width="18" height="44" class="pitch-line" />
     <rect x="114" y="30" width="6" height="20" class="pitch-line" />
     <circle cx="108" cy="40" r="0.5" class="pitch-line-spot" />
     <path d="M 102 33.09 A 9.15 9.15 0 0 0 102 46.91" class="pitch-line" />
     <rect x="120" y="36" width="1.5" height="8" class="pitch-line-thick" />
 
-    <!-- Corner arc'lar (4 köşe, r=1) -->
+    <!-- Corner arcs (4 corners, r=1) -->
     <path d="M 0 1 A 1 1 0 0 0 1 0"    class="pitch-line" />
     <path d="M 119 0 A 1 1 0 0 0 120 1" class="pitch-line" />
     <path d="M 0 79 A 1 1 0 0 1 1 80"   class="pitch-line" />
@@ -2113,7 +2113,7 @@ function renderFormationPitch(slots) {
           <text x="${x}" y="${y + 7}" class="pitch-node-sub">${escHtml(s.position_code)}</text>
         </g>`;
     }
-    const recBadge = s.recCount ? `<text x="${x}" y="${y + 7.2}" class="pitch-node-sub">${s.recCount} öneri</text>` : '';
+    const recBadge = s.recCount ? `<text x="${x}" y="${y + 7.2}" class="pitch-node-sub">${s.recCount} suggestions</text>` : '';
     return `
       <g ${handler} class="pitch-slot" style="cursor:pointer">
         <circle cx="${x}" cy="${y}" r="4.5" class="pitch-node-empty" />
@@ -2127,23 +2127,23 @@ function renderFormationPitch(slots) {
 /**
  * Render team avg-position map.
  * players: [{name, x, y, points, position, player_id}]
- * Koordinat: X 0=oyuncunun kalesi → 100=rakip; Y 0=sağ → 100=sol
- * Pitch: X 0..120 (defansif→hücum); Y 0..80 (alt→üst)
+ * Coordinates: X 0 = own goal → 100 = opponent goal; Y 0 = right → 100 = left
+ * Pitch: X 0..120 (defence→attack); Y 0..80 (bottom→top)
  *
- * Görsel kararlar (mplsoccer estetiği):
- *  - Önce takım şekil çizgileri çizilir (en alt katman)
- *  - Sonra kabarcık + iç pozisyon kodu + üstte soyad
- *  - Kabarcık yarıçapı points_count'a oransal (daha çok dakika → daha büyük)
+ * Visual choices (mplsoccer look):
+ *  - Team shape lines are drawn first (bottom layer)
+ *  - Then the bubble + position code inside + surname on top
+ *  - Bubble radius proportional to points_count (more minutes → bigger)
  */
 /**
- * Yoğunluk haritası (heatmap) — oyuncu kabarcıkları yerine Gaussian-blob grid.
- * Her oyuncunun (px,py) konumunda points'a oranlı yoğunluk var. Renk: koyu yeşil → sarı → kırmızı.
+ * Density map (heatmap) — a Gaussian-blob grid instead of player bubbles.
+ * Density at each player's (px,py) proportional to points. Colour: dark green → yellow → red.
  */
 function renderTeamHeatmap(players) {
-  if (!players.length) return `<div class="empty-state"><div class="icon">🔥</div><p>Bu takım için avg-position verisi yok.</p></div>`;
-  const W = 24, H = 16; // grid çözünürlüğü
+  if (!players.length) return `<div class="empty-state"><div class="icon">🔥</div><p>No avg-position data for this team.</p></div>`;
+  const W = 24, H = 16; // grid resolution
   const cellW = 120 / W, cellH = 80 / H;
-  const sigma = 1.6; // hücre cinsinden Gaussian yarıçapı
+  const sigma = 1.6; // Gaussian radius in cells
   const maxPts = Math.max(...players.map(p => p.points || 1));
   const pts = players.map(p => ({
     px: (p.x / 100) * 120,
@@ -2161,7 +2161,7 @@ function renderTeamHeatmap(players) {
   const maxG = Math.max(...grid);
   const lerp = (a, b, t) => a + (b - a) * t;
   const color = (v) => {
-    // 0..1 → koyu mavi → yeşil → sarı → kırmızı
+    // 0..1 → dark blue → green → yellow → red
     if (v < 0.001) return null;
     const stops = [
       [0.0, [10, 60, 120]],
@@ -2185,17 +2185,17 @@ function renderTeamHeatmap(players) {
     if (!c) continue;
     cells.push(`<rect x="${x*cellW}" y="${y*cellH}" width="${cellW}" height="${cellH}" fill="rgb(${c[0]|0},${c[1]|0},${c[2]|0})" opacity="${Math.min(0.85, 0.25 + v*0.7)}" />`);
   }
-  // ortalama konum noktaları (referans olarak küçük beyaz nokta)
+  // average position points (small white reference dot)
   const dots = pts.map(p => `<circle cx="${p.px}" cy="${p.py}" r="0.7" fill="#ffffff" opacity="0.6" />`).join('');
   return `<svg viewBox="0 0 120 80" class="pitch-svg" preserveAspectRatio="xMidYMid meet">${pitchBackgroundSvg()}<g style="mix-blend-mode:screen">${cells.join('')}</g>${dots}</svg>`;
 }
 
 function renderTeamMapPitch(players, opts) {
   opts = opts || {};
-  if (!players.length) return `<div class="empty-state"><div class="icon">⚽</div><p>Bu takım için avg-position verisi yok.</p></div>`;
+  if (!players.length) return `<div class="empty-state"><div class="icon">⚽</div><p>No avg-position data for this team.</p></div>`;
   const maxPts = Math.max(...players.map(p => p.points || 1));
 
-  // Koordinat dönüşümü
+  // Coordinate transform
   const pts = players.map(p => ({
     ...p,
     px: (p.x / 100) * 120,
@@ -2203,9 +2203,9 @@ function renderTeamMapPitch(players, opts) {
     r:  2.6 + ((p.points || 0) / maxPts) * 3.6,
   }));
 
-  // Anti-overlap: itme simülasyonu (çakışan kabarcıkları birbirinden iter)
+  // Anti-overlap: repulsion simulation (pushes overlapping bubbles apart)
   if (opts.jitter !== false && pts.length > 1) {
-    // İlk olarak tüm noktalara hafif jitter ekle (aynı koordinatta olan oyuncuları ayrıştırır)
+    // First add a little jitter to every point (separates players at identical coordinates)
     pts.forEach((p, i) => {
       const ang = (i * 137.5) * Math.PI / 180; // golden angle
       p.px += Math.cos(ang) * 0.4;
@@ -2219,7 +2219,7 @@ function renderTeamMapPitch(players, opts) {
         let dist = Math.sqrt(dx*dx + dy*dy);
         const minD = a.r + b.r + 0.8;
         if (dist < minD) {
-          // Aynı noktada veya çok yakınsa rastgele yön
+          // Same point or very close: random direction
           if (dist < 0.01) {
             const ang = Math.random() * Math.PI * 2;
             dx = Math.cos(ang); dy = Math.sin(ang); dist = 1;
@@ -2231,7 +2231,7 @@ function renderTeamMapPitch(players, opts) {
           moved = true;
         }
       }
-      // sınır içinde tut (her iter sonu)
+      // keep inside the bounds (end of every iteration)
       pts.forEach(p => {
         p.px = Math.max(p.r + 1, Math.min(120 - p.r - 1, p.px));
         p.py = Math.max(p.r + 1, Math.min(80 - p.r - 1, p.py));
@@ -2240,8 +2240,8 @@ function renderTeamMapPitch(players, opts) {
     }
   }
 
-  // Takım şekil çizgileri: pozisyon ailesi-bazlı bağlantı
-  // (örn. GK→CBs, CBs↔FBs, FBs↔WGs, mid hattı zinciri)
+  // Team shape lines: links by position family
+  // (e.g. GK→CBs, CBs↔FBs, FBs↔WGs, midfield chain)
   const byPos = {};
   pts.forEach(p => {
     const k = (p.position || '?').toUpperCase();
@@ -2268,7 +2268,7 @@ function renderTeamMapPitch(players, opts) {
     `<line x1="${a.px}" y1="${a.py}" x2="${b.px}" y2="${b.py}" class="pitch-shape-line" />`
   ).join('');
 
-  // Kabarcıklar + etiketler
+  // Bubbles + labels
   const dots = pts.map(p => {
     const lastName = (p.name || '').split(/\s+/).slice(-1)[0] || p.name || '';
     const numId = (p.player_id || '').replace('ss_', '');
@@ -2295,8 +2295,8 @@ function searchClear(hostId) {
 async function loadSquadFit() {
   const team = searchValue('tr-fit-team-search');
   const formation = document.getElementById('tr-fit-formation').value;
-  if (!team) { alert('Lütfen takım seçiniz.'); return; }
-  // Takım oyuncularını GNN roster'dan çek (11-pos uyumlu, dakika sıralı)
+  if (!team) { alert('Please select a team.'); return; }
+  // Fetch the team's players from the GNN roster (11-pos compatible, sorted by minutes)
   const rp = new URLSearchParams();
   if (glSeason()) rp.set('season', glSeason());
   let players = [];
@@ -2309,17 +2309,17 @@ async function loadSquadFit() {
       position: p.position,
     }));
   } catch(e) {}
-  _teamPlayerOptions = '<option value="">— Boş —</option>' +
+  _teamPlayerOptions = '<option value="">— Empty —</option>' +
     players.map(pl => `<option value="${pl.source_player_id || ''}|${escHtml(pl.player_name || '')}">${escHtml(pl.player_name || '')} (${escHtml(pl.position || '-')})</option>`).join('');
 
-  // Slot şemasını çek
+  // Fetch the slot layout
   try {
     const f = await api('/meta/formations');
     const fmt = (f.formations || []).find(x => x.id === formation) || (f.formations || [])[0];
     _squadFitData = { team, formation: fmt.id, slots: fmt.slots, assignments: {}, evaluated: null };
     renderSquadFit();
   } catch(e) {
-    document.getElementById('squad-fit-content').innerHTML = `<div class="empty-state"><p>Formasyon yüklenemedi: ${e.message}</p></div>`;
+    document.getElementById('squad-fit-content').innerHTML = `<div class="empty-state"><p>Could not load the formation: ${e.message}</p></div>`;
   }
 }
 
@@ -2333,16 +2333,16 @@ function renderSquadFit() {
     const fitBadge = fit == null ? '' : `<span class="badge" style="background:${fitColor}30;color:${fitColor};margin-left:6px">${fit}%</span>`;
     const reason = evRec?.reason ? `<div class="text-xs text-[#8b949e] mt-1">${escHtml(evRec.reason)}</div>` : '';
     const suggestionsBtn = (evRec && !evRec.assigned_player && (evRec.suggestions || []).length)
-      ? `<button class="btn btn-sm mt-2" onclick="showSuggestions('${s.slot_id}')">📌 ${evRec.suggestions.length} Öneri</button>` : '';
+      ? `<button class="btn btn-sm mt-2" onclick="showSuggestions('${s.slot_id}')">📌 ${evRec.suggestions.length} Suggestions</button>` : '';
     return `
       <div class="card p-3" style="border-left:3px solid ${fitColor}">
         <div class="flex justify-between items-center">
           <strong class="text-sm">${escHtml(s.label)}</strong>
           <span class="pos-badge pos-${s.position_code}">${s.position_code}</span>
         </div>
-        <div class="text-xs text-[#8b949e] mb-2">Rol: ${escHtml(s.suggested_role)}</div>
+        <div class="text-xs text-[#8b949e] mb-2">Role: ${escHtml(s.suggested_role)}</div>
         <select class="w-full" onchange="onSlotChange('${s.slot_id}', this.value)">${_teamPlayerOptions}</select>
-        ${fitBadge ? `<div class="mt-2">Uyum: ${fitBadge}</div>` : ''}
+        ${fitBadge ? `<div class="mt-2">Fit: ${fitBadge}</div>` : ''}
         ${reason}
         ${suggestionsBtn}
       </div>
@@ -2358,7 +2358,7 @@ function onSlotChange(slotId, val) {
 }
 
 async function evaluateSquadFit() {
-  if (!_squadFitData) { alert('Önce takım yükleyin.'); return; }
+  if (!_squadFitData) { alert('Load a team first.'); return; }
   const payload = {
     team: _squadFitData.team,
     formation: _squadFitData.formation,
@@ -2376,7 +2376,7 @@ async function evaluateSquadFit() {
     const j = await r.json();
     _squadFitData.evaluated = j.slots;
 
-    // 2) GNN sinerji önerileri (boş slotlar için): filled = atanmış oyuncuların pos→pid map'i
+    // 2) GNN synergy suggestions (for empty slots): filled = pos→pid map of the assigned players
     const flexible = document.getElementById('tr-fit-flexible')?.checked ?? true;
     const filled = {};
     for (const slot of _squadFitData.slots) {
@@ -2395,7 +2395,7 @@ async function evaluateSquadFit() {
       if (gr.ok) {
         const gj = await gr.json();
         const recs = gj.recommendations || {};
-        // Her slotun suggestions alanına GNN top-K ekle (yoksa stil önerisini koru)
+        // Add the GNN top-K to every slot's suggestions (keep the style suggestion if there is none)
         for (const slot of _squadFitData.evaluated) {
           if (!slot.assigned_player && recs[slot.position_code]) {
             slot.gnn_suggestions = recs[slot.position_code];
@@ -2406,7 +2406,7 @@ async function evaluateSquadFit() {
 
     renderSquadFit();
   } catch (e) {
-    alert('Uyum hesaplanamadı: ' + e.message);
+    alert('Could not compute the fit: ' + e.message);
   }
 }
 
@@ -2416,26 +2416,26 @@ function showSuggestions(slotId) {
   const sugRows = (ev.suggestions || []).map(s => {
     const pid = s.source_player_id || 0;
     const nm = escHtml(s.player_name || '');
-    return `<tr><td class="cursor-pointer" onclick="openPlayerModal(${pid}, '${nm}')">${nm}</td><td>${escHtml(s.team_name || '')}</td><td class="text-center">${escHtml(s.position || '')}</td><td class="text-right">${s.rating ?? '—'}</td><td class="text-right text-[#58a6ff]">${s._score ?? '—'}</td><td class="text-right"><button class="btn btn-sm" onclick="assignSlotFromSuggestion('${slotId}', '${pid}', '${nm}')">→ Ata</button></td></tr>`;
+    return `<tr><td class="cursor-pointer" onclick="openPlayerModal(${pid}, '${nm}')">${nm}</td><td>${escHtml(s.team_name || '')}</td><td class="text-center">${escHtml(s.position || '')}</td><td class="text-right">${s.rating ?? '—'}</td><td class="text-right text-[#58a6ff]">${s._score ?? '—'}</td><td class="text-right"><button class="btn btn-sm" onclick="assignSlotFromSuggestion('${slotId}', '${pid}', '${nm}')">→ Assign</button></td></tr>`;
   }).join('');
   const gnnRows = (ev.gnn_suggestions || []).map(s => {
     const numId = (s.player_id || '').replace('ss_', '');
     const nm = escHtml(s.name || '');
-    return `<tr><td class="cursor-pointer" onclick="openPlayerModal(${numId}, '${nm}')">${nm}</td><td>${escHtml(s.team || '')}</td><td class="text-center">${escHtml(s.position || '')}</td><td class="text-right text-[#7ee787]">${fmt2(s.score)}</td><td class="text-right"><button class="btn btn-sm" onclick="assignSlotFromSuggestion('${slotId}', '${numId}', '${nm}')">→ Ata</button></td></tr>`;
+    return `<tr><td class="cursor-pointer" onclick="openPlayerModal(${numId}, '${nm}')">${nm}</td><td>${escHtml(s.team || '')}</td><td class="text-center">${escHtml(s.position || '')}</td><td class="text-right text-[#7ee787]">${fmt2(s.score)}</td><td class="text-right"><button class="btn btn-sm" onclick="assignSlotFromSuggestion('${slotId}', '${numId}', '${nm}')">→ Assign</button></td></tr>`;
   }).join('');
   const html = `
     <div class="modal-bg" onclick="this.remove()">
       <div class="modal" onclick="event.stopPropagation()">
         <div class="p-5">
           <div class="flex justify-between items-center mb-3">
-            <h3 class="text-base font-semibold">📌 ${escHtml(ev.label)} — Öneriler</h3>
+            <h3 class="text-base font-semibold">📌 ${escHtml(ev.label)} — Suggestions</h3>
             <button class="btn btn-sm" onclick="this.closest('.modal-bg').remove()">✕</button>
           </div>
-          <h4 class="text-xs font-semibold text-[#8b949e] uppercase tracking-widest mb-2">🎯 Stil Uyumu (${escHtml(ev.suggested_role)})</h4>
-          <table><thead><tr><th>Oyuncu</th><th>Takım</th><th>Mev.</th><th>Rating</th><th>Rol Skoru</th><th></th></tr></thead>
-                 <tbody>${sugRows || '<tr><td colspan="6" class="text-center text-[#8b949e]">Öneri yok</td></tr>'}</tbody></table>
-          ${gnnRows ? `<h4 class="text-xs font-semibold text-[#8b949e] uppercase tracking-widest mt-4 mb-2">🧠 GNN Sinerjisi</h4>
-          <table><thead><tr><th>Oyuncu</th><th>Takım</th><th>Mev.</th><th>Sinerji</th><th></th></tr></thead>
+          <h4 class="text-xs font-semibold text-[#8b949e] uppercase tracking-widest mb-2">🎯 Style Fit (${escHtml(ev.suggested_role)})</h4>
+          <table><thead><tr><th>Player</th><th>Team</th><th>Pos.</th><th>Rating</th><th>Role Score</th><th></th></tr></thead>
+                 <tbody>${sugRows || '<tr><td colspan="6" class="text-center text-[#8b949e]">No suggestions</td></tr>'}</tbody></table>
+          ${gnnRows ? `<h4 class="text-xs font-semibold text-[#8b949e] uppercase tracking-widest mt-4 mb-2">🧠 GNN Synergy</h4>
+          <table><thead><tr><th>Player</th><th>Team</th><th>Pos.</th><th>Synergy</th><th></th></tr></thead>
                  <tbody>${gnnRows}</tbody></table>` : ''}
         </div>
       </div>
@@ -2448,17 +2448,17 @@ function showSuggestions(slotId) {
 function assignSlotFromSuggestion(slotId, playerId, playerName) {
   if (!_squadFitData) return;
   _squadFitData.assignments[slotId] = playerId || null;
-  // Dropdown option'ı seçili göster (varsa)
+  // Show the dropdown option as selected (if any)
   const optVal = `${playerId}|${playerName}`;
   if (!_teamPlayerOptions.includes(`value="${optVal}"`)) {
     _teamPlayerOptions = _teamPlayerOptions.replace(
-      '<option value="">— Boş —</option>',
-      `<option value="">— Boş —</option><option value="${optVal}">${playerName} (transfer)</option>`
+      '<option value="">— Empty —</option>',
+      `<option value="">— Empty —</option><option value="${optVal}">${playerName} (transfer)</option>`
     );
   }
   document.querySelector('.modal-bg')?.remove();
   renderSquadFit();
-  // Seçili oyuncuyu select'te işaretle
+  // Mark the selected player in the select
   setTimeout(() => {
     document.querySelectorAll('#squad-fit-content select').forEach(sel => {
       const opt = Array.from(sel.options).find(o => o.value.startsWith(playerId + '|'));
@@ -2481,19 +2481,19 @@ function onTransferGroupChange() {
 async function onTransferRoleChange() {
   const role = trRole();
   if (!role) return;
-  // Referans oyuncu listesini seçilen role göre doldur
+  // Fill the reference player list for the selected role
   const sel = document.getElementById('tr-target-player');
   if (!sel) return;
-  sel.innerHTML = '<option value="">— Yükleniyor… —</option>';
+  sel.innerHTML = '<option value="">— Loading… —</option>';
   try {
     const p = new URLSearchParams({ role, min_minutes: trMinMin(), limit: 50 });
     if (trLeague()) p.set('league', trLeague());
     if (trSeason()) p.set('season', trSeason());
     const d = await api('/stats/role-top10?' + p);
-    sel.innerHTML = '<option value="">— Seçiniz —</option>' +
+    sel.innerHTML = '<option value="">— Select —</option>' +
       (d.data || []).map(pl => `<option value="${pl.source_player_id}">${escHtml(pl.player_name)} (${escHtml(pl.team_name || '')})</option>`).join('');
   } catch(e) {
-    sel.innerHTML = '<option value="">— Hata —</option>';
+    sel.innerHTML = '<option value="">— Error —</option>';
   }
 }
 
@@ -2512,7 +2512,7 @@ function _buildTransferParams(extra = {}) {
 
 async function loadSimilar() {
   const pidStr = searchValue('tr-target-player-search'); // 'ss_<id>'
-  if (!pidStr) { alert('Lütfen referans oyuncu seçiniz.'); return; }
+  if (!pidStr) { alert('Please select a reference player.'); return; }
   const pidNum = pidStr.replace('ss_', '');
   const wrap = document.getElementById('similar-table-wrap');
   const info = document.getElementById('similar-target-info');
@@ -2524,9 +2524,9 @@ async function loadSimilar() {
     const t = d.query;
     info.classList.remove('hidden');
     info.innerHTML = `<div class="flex gap-4 flex-wrap">
-      <div><span class="text-[#8b949e] text-xs">Oyuncu</span><div class="font-bold">${escHtml(t.name)}</div></div>
-      <div><span class="text-[#8b949e] text-xs">Takım</span><div>${escHtml(t.team || '—')}</div></div>
-      <div><span class="text-[#8b949e] text-xs">Mevki</span><div>${posBadge(t.position)}</div></div>
+      <div><span class="text-[#8b949e] text-xs">Player</span><div class="font-bold">${escHtml(t.name)}</div></div>
+      <div><span class="text-[#8b949e] text-xs">Team</span><div>${escHtml(t.team || '—')}</div></div>
+      <div><span class="text-[#8b949e] text-xs">Position</span><div>${posBadge(t.position)}</div></div>
     </div>`;
     const rows = d.results.map((s, i) => {
       const numId = (s.player_id || '').replace('ss_', '');
@@ -2538,7 +2538,7 @@ async function loadSimilar() {
         <td class="font-bold text-[#7ee787]">${fmt2(s.score)}</td>
       </tr>`;
     }).join('');
-    wrap.innerHTML = `<table><thead><tr><th>#</th><th>Oyuncu</th><th>Takım</th><th>Mev.</th><th>Sinerji</th></tr></thead><tbody>${rows}</tbody></table>`;
+    wrap.innerHTML = `<table><thead><tr><th>#</th><th>Player</th><th>Team</th><th>Pos.</th><th>Synergy</th></tr></thead><tbody>${rows}</tbody></table>`;
   } catch(e) {
     wrap.innerHTML = `<div class="text-[#ff7b72] p-4">${e.message}</div>`;
     info.classList.add('hidden');
@@ -2547,20 +2547,20 @@ async function loadSimilar() {
 
 async function loadStarPicks() {
   const role = trRole();
-  if (!role) { alert('Lütfen rol seçiniz.'); return; }
+  if (!role) { alert('Please select a role.'); return; }
   const wrap = document.getElementById('star-table-wrap');
   wrap.innerHTML = '<div class="spinner"></div>';
   try {
     const d = await api('/transfer/star-picks?' + _buildTransferParams({ limit: 15 }));
-    // Referans oyuncu listesini de doldur
+    // Fill the reference player list as well
     const trSel = document.getElementById('tr-target-player');
     if (trSel && d.data.length) {
-      trSel.innerHTML = '<option value="">— Seçiniz —</option>' +
+      trSel.innerHTML = '<option value="">— Select —</option>' +
         d.data.map(p => `<option value="${p.source_player_id}">${escHtml(p.player_name)} (${escHtml(p.team_name || '')})</option>`).join('');
     }
     const rows = d.data.map((p, i) => {
       const ok = p.transferable;
-      const badge = ok ? '<span class="badge pill-goal">✅ Uygun</span>' : '<span class="badge pill-miss">🔒 Kilit</span>';
+      const badge = ok ? '<span class="badge pill-goal">✅ Available</span>' : '<span class="badge pill-miss">🔒 Locked</span>';
       const tier = p.team_tier || '—';
       return `<tr class="cursor-pointer" onclick="openPlayerModal(${p.source_player_id}, '${escHtml(p.player_name)}')">
         <td class="text-[#8b949e] font-mono text-xs">${i + 1}</td>
@@ -2574,7 +2574,7 @@ async function loadStarPicks() {
         <td>${badge}</td>
       </tr>`;
     }).join('');
-    wrap.innerHTML = `<table><thead><tr><th>#</th><th>Oyuncu</th><th>Takım</th><th>Mev.</th><th>Maç</th><th>Rating</th><th>Rol Skoru</th><th>Takım Tier</th><th>Durum</th></tr></thead><tbody>${rows}</tbody></table>`;
+    wrap.innerHTML = `<table><thead><tr><th>#</th><th>Player</th><th>Team</th><th>Pos.</th><th>Apps</th><th>Rating</th><th>Role Score</th><th>Team Tier</th><th>Status</th></tr></thead><tbody>${rows}</tbody></table>`;
   } catch(e) {
     wrap.innerHTML = `<div class="text-[#ff7b72] p-4">${e.message}</div>`;
   }
@@ -2582,7 +2582,7 @@ async function loadStarPicks() {
 
 async function loadBudgetGems() {
   const role = trRole();
-  if (!role) { alert('Lütfen rol seçiniz.'); return; }
+  if (!role) { alert('Please select a role.'); return; }
   const wrap = document.getElementById('budget-table-wrap');
   const ctx = document.getElementById('budget-context');
   wrap.innerHTML = '<div class="spinner"></div>';
@@ -2595,15 +2595,15 @@ async function loadBudgetGems() {
     if (ctx) {
       if (d.reference_team && d.reference_team_pct != null) {
         const pct = Math.round(d.reference_team_pct * 100);
-        ctx.textContent = `${d.reference_team} lig sıralamasında üst %${100 - pct}'de — bunun altındaki takımlardan oyuncular listeleniyor.`;
+        ctx.textContent = `${d.reference_team} is in the top ${100 - pct}% of the league table — listing players from teams below it.`;
         ctx.classList.remove('hidden');
       } else {
-        ctx.textContent = 'Lig genelinde alt %50 takımlardan oyuncular.';
+        ctx.textContent = 'Players from the bottom 50% of teams across the league.';
         ctx.classList.remove('hidden');
       }
     }
     if (!d.data.length) {
-      wrap.innerHTML = '<p class="text-[#8b949e] text-sm p-4">Bu kriterlere uygun oyuncu bulunamadı.</p>';
+      wrap.innerHTML = '<p class="text-[#8b949e] text-sm p-4">No players match these criteria.</p>';
       return;
     }
     const rows = d.data.map((p, i) => `
@@ -2616,32 +2616,32 @@ async function loadBudgetGems() {
         <td class="text-[#58a6ff] font-bold">${fmt(p.rating, 2)}</td>
         <td class="font-bold text-[#7ee787]">${fmt(p._score, 1)}</td>
       </tr>`).join('');
-    wrap.innerHTML = `<table><thead><tr><th>#</th><th>Oyuncu</th><th>Takım</th><th>Mev.</th><th>Maç</th><th>Rating</th><th>Rol Skoru</th></tr></thead><tbody>${rows}</tbody></table>`;
+    wrap.innerHTML = `<table><thead><tr><th>#</th><th>Player</th><th>Team</th><th>Pos.</th><th>Apps</th><th>Rating</th><th>Role Score</th></tr></thead><tbody>${rows}</tbody></table>`;
   } catch(e) {
     wrap.innerHTML = `<div class="text-[#ff7b72] p-4">${e.message}</div>`;
   }
 }
 
-// Eski istatistiksel squad-needs — yerine GNN tabanlı yeni implementasyon
+// Old statistical squad-needs — replaced by the new GNN-based implementation
 async function loadSquadNeeds() {
   const team = searchValue('tr-squad-team-search');
   const formation = document.getElementById('tr-squad-formation')?.value || '4-3-3';
-  if (!team) { alert('Lütfen takım seçiniz.'); return; }
+  if (!team) { alert('Please select a team.'); return; }
   const wrap = document.getElementById('squad-needs-wrap');
   wrap.innerHTML = '<div class="spinner"></div>';
   const sn = glSeason();
   try {
-    // 1) Roster: pozisyon başına en çok dakika oynayanı bul
+    // 1) Roster: find the player with the most minutes per position
     const rp = new URLSearchParams();
     if (sn) rp.set('season', sn);
     const roster = await api(`/gnn/team-roster/${encodeURIComponent(team)}?` + rp);
 
-    // 2) Formasyon slot listesi
+    // 2) Formation slot list
     const fmtData = await api('/meta/formations');
     const fmt = (fmtData.formations || []).find(x => x.id === formation) || (fmtData.formations || [])[0];
-    if (!fmt) { wrap.innerHTML = '<p class="text-[#ff7b72]">Formasyon bulunamadı.</p>'; return; }
+    if (!fmt) { wrap.innerHTML = '<p class="text-[#ff7b72]">Formation not found.</p>'; return; }
 
-    // 3) Auto-fill: slot.position_code başına dakika DESC sırada ilk oyuncu
+    // 3) Auto-fill: first player by minutes DESC per slot.position_code
     const usedPids = new Set();
     const filled = {};   // pos_code -> player_id
     const slotPlayers = []; // slot_id -> {player_id, name}
@@ -2658,7 +2658,7 @@ async function loadSquadNeeds() {
       }
     }
 
-    // 4) Boş slotlar için GNN squad-recommend
+    // 4) GNN squad-recommend for empty slots
     let recs = {};
     const emptyPositions = new Set(slotPlayers.filter(s => !s.player).map(s => s.position_code));
     if (emptyPositions.size > 0) {
@@ -2679,7 +2679,7 @@ async function loadSquadNeeds() {
       }
     }
 
-    // 5) Render — SVG pitch sol, detay sağ
+    // 5) Render — SVG pitch on the left, details on the right
     const slotsForPitch = slotPlayers.map(s => ({
       position_code: s.position_code,
       label: s.label,
@@ -2692,7 +2692,7 @@ async function loadSquadNeeds() {
       return `<div class="flex items-center justify-between p-2 hover:bg-[#21262d] rounded cursor-pointer" onclick="openPlayerModal(${numId}, '${escHtml(s.player.name)}')">
         <div>
           <div class="text-sm font-semibold">${escHtml(s.player.name)}</div>
-          <div class="text-[10px] text-[#8b949e]">${escHtml(s.label)} · ${s.player.minutes} dk</div>
+          <div class="text-[10px] text-[#8b949e]">${escHtml(s.label)} · ${s.player.minutes} min</div>
         </div>
         <span class="pos-badge pos-${s.position_code}">${s.position_code}</span>
       </div>`;
@@ -2713,19 +2713,19 @@ async function loadSquadNeeds() {
       return `<div class="mb-3">
         <div class="flex items-center gap-2 mb-1">
           <span class="pos-badge pos-${s.position_code}">${s.position_code}</span>
-          <span class="text-xs text-[#ff7b72]">⚠️ ${escHtml(s.label)} eksik</span>
+          <span class="text-xs text-[#ff7b72]">⚠️ ${escHtml(s.label)} missing</span>
         </div>
-        ${recRows || '<div class="text-xs text-[#8b949e] pl-2">Öneri yok</div>'}
+        ${recRows || '<div class="text-xs text-[#8b949e] pl-2">No suggestions</div>'}
       </div>`;
     }).join('');
 
     wrap.innerHTML = `
-      <div class="text-xs text-[#8b949e] mb-3">📊 <b>${escHtml(team)}</b> · ${formation} · ${roster.players.length} kayıtlı oyuncu · <span class="pill">${slotPlayers.filter(s => s.player).length}/11 dolu</span></div>
+      <div class="text-xs text-[#8b949e] mb-3">📊 <b>${escHtml(team)}</b> · ${formation} · ${roster.players.length} registered players · <span class="pill">${slotPlayers.filter(s => s.player).length}/11 filled</span></div>
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <div class="lg:col-span-2">${renderFormationPitch(slotsForPitch)}</div>
         <div class="space-y-2">
-          ${filledList ? `<h4 class="text-xs font-semibold text-[#7ee787] uppercase tracking-widest mb-1">✅ Mevcut Kadro</h4>${filledList}` : ''}
-          ${emptyList ? `<h4 class="text-xs font-semibold text-[#ff7b72] uppercase tracking-widest mt-3 mb-1">⚠️ Eksik Slotlar — GNN Önerileri</h4>${emptyList}` : ''}
+          ${filledList ? `<h4 class="text-xs font-semibold text-[#7ee787] uppercase tracking-widest mb-1">✅ Current Squad</h4>${filledList}` : ''}
+          ${emptyList ? `<h4 class="text-xs font-semibold text-[#ff7b72] uppercase tracking-widest mt-3 mb-1">⚠️ Empty Slots — GNN Suggestions</h4>${emptyList}` : ''}
         </div>
       </div>`;
   } catch (e) {
@@ -2737,19 +2737,19 @@ function fmt2(v) { return v == null ? '—' : Number(v).toFixed(2); }
 
 async function loadTeamMap() {
   const team = searchValue('tr-map-team-search');
-  if (!team) { alert('Lütfen takım seçiniz.'); return; }
+  if (!team) { alert('Please select a team.'); return; }
   const wrap = document.getElementById('team-map-wrap');
   wrap.innerHTML = '<div class="spinner"></div>';
   try {
     const p = new URLSearchParams();
     if (glSeason()) p.set('season', glSeason());
     const d = await api(`/gnn/team-map/${encodeURIComponent(team)}?` + p);
-    // Tüm oyuncuları cache'e al; min-dakika filtresi sonra uygulanır
+    // Cache all players; the min-minutes filter is applied afterwards
     _teamMapAll = (d.players || []);
     const minMin = parseInt(document.getElementById('tm-min-min')?.value || '0', 10) || 0;
     const minMatches = Math.max(0, Math.floor(minMin / 90));
     const eligible = _teamMapAll.filter(pl => !minMatches || (pl.points || 0) >= minMatches);
-    // İlk yüklemede tüm uygun oyuncular seçili
+    // On first load all eligible players are selected
     _teamMapSelected = new Set(eligible.map(p => p.player_id));
     renderTeamMapPlayerPicker(eligible);
     rerenderTeamMap();
@@ -2776,9 +2776,9 @@ function renderTeamMapPlayerPicker(players) {
   }).join('');
   host.innerHTML = `
     <div class="flex items-center gap-2 mb-2">
-      <span class="text-xs text-[#8b949e]">Görüntülenecek oyuncular (${players.length}):</span>
-      <button class="btn btn-sm" onclick="teamMapSelectAll(true)">Hepsi</button>
-      <button class="btn btn-sm" onclick="teamMapSelectAll(false)">Hiçbiri</button>
+      <span class="text-xs text-[#8b949e]">Players to show (${players.length}):</span>
+      <button class="btn btn-sm" onclick="teamMapSelectAll(true)">All</button>
+      <button class="btn btn-sm" onclick="teamMapSelectAll(false)">None</button>
     </div>
     <div class="flex flex-wrap gap-1.5">${chips}</div>`;
 }
@@ -2807,25 +2807,25 @@ function rerenderTeamMap() {
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
       <div class="lg:col-span-2">${heatmap ? renderTeamHeatmap(players) : renderTeamMapPitch(players, {jitter})}</div>
       <div>
-        <h4 class="text-xs font-semibold text-[#8b949e] uppercase tracking-widest mb-2">Oyuncular (${players.length})</h4>
+        <h4 class="text-xs font-semibold text-[#8b949e] uppercase tracking-widest mb-2">Players (${players.length})</h4>
         ${players.map(p => {
             const numId = (p.player_id || '').replace('ss_', '');
             return `<div class="flex items-center justify-between p-2 hover:bg-[#21262d] rounded cursor-pointer" onclick="openPlayerModal(${numId}, '${escHtml(p.name)}')">
               <div>
                 <div class="text-sm font-semibold">${escHtml(p.name)}</div>
-                <div class="text-[10px] text-[#8b949e]">x=${p.x.toFixed(1)} y=${p.y.toFixed(1)} · ${p.points} ölçüm</div>
+                <div class="text-[10px] text-[#8b949e]">x=${p.x.toFixed(1)} y=${p.y.toFixed(1)} · ${p.points} measurements</div>
               </div>
               ${posBadge(p.position)}
             </div>`;
-          }).join('') || '<div class="empty-state"><p class="text-xs">Veri yok.</p></div>'}
+          }).join('') || '<div class="empty-state"><p class="text-xs">No data.</p></div>'}
         </div>
       </div>`;
 }
 
-// Eski istatistiksel squad-needs (kullanılmıyor ama referans için bırakıldı)
+// Old statistical squad-needs (unused, kept for reference)
 async function loadSquadNeedsLegacy() {
   const team = searchValue('tr-squad-team-search');
-  if (!team) { alert('Lütfen takım seçiniz.'); return; }
+  if (!team) { alert('Please select a team.'); return; }
   const wrap = document.getElementById('squad-needs-wrap');
   wrap.innerHTML = '<div class="spinner"></div>';
   const sn = glSeason();
@@ -2834,12 +2834,12 @@ async function loadSquadNeedsLegacy() {
   try {
     const d = await api(`/transfer/squad-needs/${encodeURIComponent(team)}?` + p);
     const posNames = {
-      GK: 'Kaleci',
-      RB: 'Sağ Bek', LB: 'Sol Bek', RCB: 'Sağ Stoper', LCB: 'Sol Stoper',
-      CDM: 'Ön Libero', CM: 'Orta Saha', CAM: '10 Numara',
-      RW: 'Sağ Kanat', LW: 'Sol Kanat', ST: 'Santrafor',
-      // Eski base fallback
-      G: 'Kaleci', D: 'Defans', M: 'Orta Saha', F: 'Forvet',
+      GK: 'Goalkeeper',
+      RB: 'Right Back', LB: 'Left Back', RCB: 'Right CB', LCB: 'Left CB',
+      CDM: 'Holding Mid', CM: 'Central Mid', CAM: 'Number 10',
+      RW: 'Right Wing', LW: 'Left Wing', ST: 'Striker',
+      // Old base fallback
+      G: 'Goalkeeper', D: 'Defender', M: 'Midfielder', F: 'Forward',
     };
     const gapRows = d.gaps.map(g => {
       const ok = g.status === 'ok';
@@ -2847,7 +2847,7 @@ async function loadSquadNeedsLegacy() {
         <td class="font-semibold">${posNames[g.pos] || g.pos}</td>
         <td>${fmtInt(g.current)}</td>
         <td>${fmtInt(g.required)}</td>
-        <td class="${ok ? 'text-[#7ee787]' : 'text-[#ff7b72]'} font-bold">${ok ? '✅ Yeterli' : `⚠️ ${g.gap} eksik`}</td>
+        <td class="${ok ? 'text-[#7ee787]' : 'text-[#ff7b72]'} font-bold">${ok ? '✅ Enough' : `⚠️ ${g.gap} missing`}</td>
       </tr>`;
     }).join('');
 
@@ -2867,18 +2867,18 @@ async function loadSquadNeedsLegacy() {
             <td class="font-bold text-[#7ee787]">${fmt(p._score, 1)}</td>
           </tr>`).join('');
         posContent += `<div class="mb-4"><div class="text-xs font-medium text-[#c9d1d9] mb-2 italic">${escHtml(role)}</div>
-          <div class="overflow-x-auto"><table><thead><tr><th>#</th><th>Oyuncu</th><th>Takım</th><th>Mev.</th><th>Rating</th><th>Skor</th></tr></thead><tbody>${rows}</tbody></table></div></div>`;
+          <div class="overflow-x-auto"><table><thead><tr><th>#</th><th>Player</th><th>Team</th><th>Pos.</th><th>Rating</th><th>Score</th></tr></thead><tbody>${rows}</tbody></table></div></div>`;
       }
       if (posContent) {
-        suggestHtml += `<div class="mt-5"><h3 class="text-xs font-semibold text-[#8b949e] uppercase tracking-widest mb-3">${posNames[pos] || pos} — Transfer Önerileri</h3>${posContent}</div>`;
+        suggestHtml += `<div class="mt-5"><h3 class="text-xs font-semibold text-[#8b949e] uppercase tracking-widest mb-3">${posNames[pos] || pos} — Transfer Suggestions</h3>${posContent}</div>`;
       }
     }
 
     wrap.innerHTML = `
       <div class="overflow-x-auto mb-4">
-        <table id="tbl-gaps"><thead><tr><th>Mevki</th><th>Mevcut</th><th>Önerilen</th><th>Durum</th></tr></thead><tbody>${gapRows}</tbody></table>
+        <table id="tbl-gaps"><thead><tr><th>Position</th><th>Current</th><th>Recommended</th><th>Status</th></tr></thead><tbody>${gapRows}</tbody></table>
       </div>
-      ${suggestHtml || '<p class="text-[#8b949e] text-sm">Eksik mevki bulunamadı.</p>'}`;
+      ${suggestHtml || '<p class="text-[#8b949e] text-sm">No missing positions found.</p>'}`;
   } catch(e) {
     wrap.innerHTML = `<div class="text-[#ff7b72] p-4">${e.message}</div>`;
   }
@@ -2886,7 +2886,7 @@ async function loadSquadNeedsLegacy() {
 
 // ─── Raporlar ─────────────────────────────────────────────────────────────────
 
-// Rapor sekmesi yüklendiğinde çağrılır — lig/sezon/takım dropdown'larını doldurur
+// Called when the report tab loads — fills the league/season/team dropdowns
 async function initReports() {
   try {
     const [lgResp, snResp] = await Promise.all([api('/meta/leagues'), api('/meta/seasons')]);
@@ -2907,7 +2907,7 @@ async function initReports() {
         sel.appendChild(o);
       });
     });
-  } catch(e) { console.warn('Meta alınamadı', e); }
+  } catch(e) { console.warn('Could not load meta', e); }
 
   await Promise.all([
     populateReportTeams('r-league', 'r-team', 'r-season-select'),
@@ -2931,22 +2931,22 @@ async function populateReportTeams(leagueId, teamId, seasonId) {
   try {
     const data = await api(url);
     const teams = data.data.map(t => t.team_name).sort();
-    sel.innerHTML = '<option value="">— Seçiniz —</option>';
+    sel.innerHTML = '<option value="">— Select —</option>';
     teams.forEach(t => {
       const o = document.createElement('option');
       o.value = t; o.textContent = t;
       if (t === prev) o.selected = true;
       sel.appendChild(o);
     });
-  } catch(e) { console.warn('Takım listesi alınamadı', e); }
+  } catch(e) { console.warn('Could not load the team list', e); }
 }
 
 async function downloadTeamReport() {
   const team = document.getElementById('r-team').value;
   const season = document.getElementById('r-season-select').value;
-  if (!team) { alert('Lütfen bir takım seçiniz.'); return; }
+  if (!team) { alert('Please select a team.'); return; }
   const status = document.getElementById('r-status');
-  status.innerHTML = '<span style="color:var(--orange)">⏳ Rapor üretiliyor, lütfen bekleyin (20-60 sn)...</span>';
+  status.innerHTML = '<span style="color:var(--orange)">⏳ Generating the report, please wait (20-60 s)...</span>';
   try {
     let url = `/reports/team/${encodeURIComponent(team)}/pdf`;
     if (season) url += `?season=${encodeURIComponent(season)}`;
@@ -2960,9 +2960,9 @@ async function downloadTeamReport() {
     a.href = URL.createObjectURL(blob);
     a.download = team.toLowerCase().replace(/ /g,'_') + '_rapor.pdf';
     a.click();
-    status.innerHTML = '<span style="color:var(--green)">✅ Rapor indirildi.</span>';
+    status.innerHTML = '<span style="color:var(--green)">✅ Report downloaded.</span>';
   } catch(e) {
-    status.innerHTML = `<span style="color:var(--red)">❌ Hata: ${e.message}</span>`;
+    status.innerHTML = `<span style="color:var(--red)">❌ Error: ${e.message}</span>`;
   }
 }
 
@@ -2970,10 +2970,10 @@ async function downloadCompareReport() {
   const ta = document.getElementById('rc-team-a').value;
   const tb = document.getElementById('rc-team-b').value;
   const season = document.getElementById('rc-season-select').value;
-  if (!ta || !tb) { alert('Her iki takımı da seçiniz.'); return; }
-  if (ta === tb) { alert('Farklı iki takım seçiniz.'); return; }
+  if (!ta || !tb) { alert('Please select both teams.'); return; }
+  if (ta === tb) { alert('Please select two different teams.'); return; }
   const status = document.getElementById('rc-status');
-  status.innerHTML = '<span style="color:var(--orange)">⏳ Karşılaştırma raporu üretiliyor (30-90 sn)...</span>';
+  status.innerHTML = '<span style="color:var(--orange)">⏳ Generating the comparison report (30-90 s)...</span>';
   try {
     let url = `/reports/compare/${encodeURIComponent(ta)}/${encodeURIComponent(tb)}/pdf`;
     if (season) url += `?season=${encodeURIComponent(season)}`;
@@ -2987,9 +2987,9 @@ async function downloadCompareReport() {
     a.href = URL.createObjectURL(blob);
     a.download = `${ta}_vs_${tb}_rapor.pdf`.toLowerCase().replace(/ /g,'_');
     a.click();
-    status.innerHTML = '<span style="color:var(--green)">✅ Karşılaştırma raporu indirildi.</span>';
+    status.innerHTML = '<span style="color:var(--green)">✅ Comparison report downloaded.</span>';
   } catch(e) {
-    status.innerHTML = `<span style="color:var(--red)">❌ Hata: ${e.message}</span>`;
+    status.innerHTML = `<span style="color:var(--red)">❌ Error: ${e.message}</span>`;
   }
 }
 
@@ -3003,10 +3003,10 @@ async function loadOverview() {
   try {
     const s = await api('/stats/summary' + qstr);
     const cards = [
-      { label: 'Toplam Maç', value: fmtInt(s.matches.total_matches), icon: '🏟️', color: '#1f6feb', bg: 'rgba(31,111,235,.15)' },
-      { label: 'Farklı Lig', value: fmtInt(s.matches.leagues), icon: '🌍', color: '#7ee787', bg: 'rgba(126,231,135,.15)' },
-      { label: 'Benzersiz Oyuncu', value: parseInt(s.players.unique_players || 0).toLocaleString('tr'), icon: '👤', color: '#ffa657', bg: 'rgba(255,166,87,.15)' },
-      { label: 'Toplam Şut', value: parseInt(s.shots.total_shots).toLocaleString('tr'), icon: '⚡', color: '#d2a8ff', bg: 'rgba(210,168,255,.15)' },
+      { label: 'Total Matches', value: fmtInt(s.matches.total_matches), icon: '🏟️', color: '#1f6feb', bg: 'rgba(31,111,235,.15)' },
+      { label: 'Leagues', value: fmtInt(s.matches.leagues), icon: '🌍', color: '#7ee787', bg: 'rgba(126,231,135,.15)' },
+      { label: 'Unique Players', value: parseInt(s.players.unique_players || 0).toLocaleString('en'), icon: '👤', color: '#ffa657', bg: 'rgba(255,166,87,.15)' },
+      { label: 'Total Shots', value: parseInt(s.shots.total_shots).toLocaleString('en'), icon: '⚡', color: '#d2a8ff', bg: 'rgba(210,168,255,.15)' },
     ];
     document.getElementById('summary-cards').innerHTML = cards.map(c => `
       <div class="summary-card">
@@ -3017,11 +3017,11 @@ async function loadOverview() {
         </div>
       </div>`).join('');
     document.getElementById('header-stats').innerHTML =
-      `<span class="text-[#58a6ff] font-medium">${fmtInt(s.matches.total_matches)}</span><span>maç</span>
+      `<span class="text-[#58a6ff] font-medium">${fmtInt(s.matches.total_matches)}</span><span>matches</span>
        <span style="color:var(--border)">|</span>
-       <span class="text-[#ffa657] font-medium">${parseInt(s.shots.total_shots).toLocaleString('tr')}</span><span>şut</span>
+       <span class="text-[#ffa657] font-medium">${parseInt(s.shots.total_shots).toLocaleString('en')}</span><span>shots</span>
        <span style="color:var(--border)">|</span>
-       <span class="text-[#7ee787] font-medium">${fmtInt(s.matches.leagues)}</span><span>lig</span>`;
+       <span class="text-[#7ee787] font-medium">${fmtInt(s.matches.leagues)}</span><span>leagues</span>`;
   } catch(e) { console.error(e); }
 
   try {
@@ -3050,7 +3050,7 @@ async function loadOverview() {
       data: {
         labels: top10.map(p => p.player_name.split(' ').pop()),
         datasets: [
-          { label: 'Gol', data: top10.map(p => p.goals), backgroundColor: 'rgba(126,231,135,.75)', borderRadius: 4 },
+          { label: 'Goals', data: top10.map(p => p.goals), backgroundColor: 'rgba(126,231,135,.75)', borderRadius: 4 },
           { label: 'xG', data: top10.map(p => parseFloat(p.xg) || 0), backgroundColor: 'rgba(255,166,87,.55)', borderRadius: 4 },
         ]
       },
@@ -3084,19 +3084,19 @@ async function loadOverview() {
   // Header rozetleri (aktif filtre)
   const lgBadge = document.getElementById('ov-active-league');
   const snBadge = document.getElementById('ov-active-season');
-  if (lgBadge) lgBadge.textContent = lg || 'Tüm Ligler';
-  if (snBadge) snBadge.textContent = sn || 'Tüm Sezonlar';
+  if (lgBadge) lgBadge.textContent = lg || 'All Leagues';
+  if (snBadge) snBadge.textContent = sn || 'All Seasons';
 
   // GNN meta + coverage rozetleri
   try {
     const m = await api('/gnn/meta');
     const g = document.getElementById('ov-gnn-badge');
     const c = document.getElementById('ov-cov-badge');
-    if (g) g.innerHTML = `🧠 GNN: <b>${m.players}</b> oyuncu · <b>${m.edges}</b> kenar · ${m.season}`;
+    if (g) g.innerHTML = `🧠 GNN: <b>${m.players}</b> players · <b>${m.edges}</b> edges · ${m.season}`;
     if (c && m.avg_pos_coverage) c.innerHTML = `🗺 avg-pos: <b>${m.avg_pos_coverage.pct}%</b> (${m.avg_pos_coverage.done}/${m.avg_pos_coverage.total})`;
   } catch(e) { /* GNN olmayabilir */ }
 
-  // Son maçlar feed
+  // Recent matches feed
   try {
     const m = await api('/matches?limit=10' + (qs.toString() ? '&'+qs : ''));
     const host = document.getElementById('ov-recent-feed');
@@ -3110,13 +3110,13 @@ async function loadOverview() {
           </div>
           <div class="font-bold text-sm" style="color:#7ee787">${r.home_score ?? '-'} : ${r.away_score ?? '-'}</div>
           <div class="text-xs font-medium">${escHtml(r.away_team || r.away || '')}</div>
-        </div>`).join('') : '<div class="empty-state"><div class="icon">📭</div><p>Maç yok</p></div>';
+        </div>`).join('') : '<div class="empty-state"><div class="icon">📭</div><p>No matches</p></div>';
     }
   } catch(e) { console.error('feed:', e); }
 }
 
 // ─── Filter population ────────────────────────────────────────────────────────
-function fillSelect(id, values, allLabel = 'Tümü') {
+function fillSelect(id, values, allLabel = 'All') {
   const el = document.getElementById(id);
   const prev = el.value;
   el.innerHTML = `<option value="">${allLabel}</option>` +
@@ -3130,15 +3130,15 @@ async function populateFilters() {
     // Global bar
     fillSelect('gl-league', leagues);
     fillSelect('gl-season', seasons);
-    // Maçlar tab
+    // Matches tab
     fillSelect('f-league', leagues);
     fillSelect('f-season', seasons);
-    // Takımlar tab
+    // Teams tab
     fillSelect('t-season', seasons);
     // Radar tab
     fillSelect('radar-league', leagues);
     fillSelect('radar-season', seasons);
-  } catch(e) { console.warn('Lig/sezon listesi alınamadı:', e); }
+  } catch(e) { console.warn('Could not load the league/season list:', e); }
 
   try {
     const lg = glLeague(); const sn = glSeason();
@@ -3149,7 +3149,7 @@ async function populateFilters() {
     const teamNames = td.data.map(t => t.team_name).sort();
     fillSelect('f-team', teamNames);
     fillSelect('p-team', teamNames);
-  } catch(e) { console.warn('Takım listesi alınamadı:', e); }
+  } catch(e) { console.warn('Could not load the team list:', e); }
 }
 
 // ─── Global Filtre ────────────────────────────────────────────────────────────
@@ -3165,7 +3165,7 @@ function applyGlobalFilter() {
   if (parts.length) { lbl.textContent = parts.join(' · '); lbl.style.display='inline'; }
   else { lbl.style.display='none'; }
 
-  // Aktif sekmeye göre yenile
+  // Refresh based on the active tab
   const active = ['overview','matches','players','teams'].find(t =>
     !document.getElementById('tab-'+t).classList.contains('hidden'));
   if (active === 'overview') loadOverview();
@@ -3224,7 +3224,7 @@ async function loadMatches(reset = true) {
   try {
     const d = await api('/matches?' + p);
     if (reset) tbody.innerHTML = '';
-    document.getElementById('matches-count').textContent = `${d.total} maç listelendi`;
+    document.getElementById('matches-count').textContent = `${d.total} matches listed`;
     d.data.forEach(m => {
       const hg = m.home_goals ?? '?', ag = m.away_goals ?? '?';
       const homeW = m.winner_code === 1, awayW = m.winner_code === 3;
@@ -3248,7 +3248,7 @@ async function loadMatches(reset = true) {
         </td>
         <td class="font-medium ${awayW ? 'text-white' : 'text-[#c9d1d9]'}" style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(m.away_team_name)}</td>
         <td>${xgCell}</td>
-        <td><button class="btn btn-sm" onclick="openMatchModal('${m.match_id}', event, ${JSON.stringify(m).replace(/"/g, '&quot;')})">Detay →</button></td>`;
+        <td><button class="btn btn-sm" onclick="openMatchModal('${m.match_id}', event, ${JSON.stringify(m).replace(/"/g, '&quot;')})">Details →</button></td>`;
       tbody.appendChild(tr);
     });
     matchOffset += d.data.length;
@@ -3280,7 +3280,7 @@ async function searchPlayers() {
   try {
     const d = await api('/players?' + p);
     if (!d.data.length) {
-      tbody.innerHTML = '<tr><td colspan="10"><div class="empty-state"><div class="icon">👤</div><p>Oyuncu bulunamadı.</p></div></td></tr>';
+      tbody.innerHTML = '<tr><td colspan="10"><div class="empty-state"><div class="icon">👤</div><p>No players found.</p></div></td></tr>';
       return;
     }
     tbody.innerHTML = d.data.map(p => `
@@ -3321,14 +3321,14 @@ async function loadTeams() {
   try {
     const d = await api('/teams?' + p);
     if (!d.data.length) {
-      grid.innerHTML = '<div class="col-span-5 empty-state"><div class="icon">🛡️</div><p>Takım bulunamadı.</p></div>';
+      grid.innerHTML = '<div class="col-span-5 empty-state"><div class="icon">🛡️</div><p>No teams found.</p></div>';
       return;
     }
     grid.innerHTML = d.data.map(t => `
       <div class="card card-hover p-4 cursor-pointer" onclick="openTeamModal(${t.team_id}, '${escHtml(t.team_name)}')">
         <div style="width:36px;height:36px;background:rgba(88,166,255,.1);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:1.2rem;margin-bottom:10px">🛡️</div>
         <div class="font-semibold text-sm leading-tight mb-1.5">${escHtml(t.team_name)}</div>
-        <div class="text-xs text-[#8b949e]">${fmtInt(t.matches)} maç</div>
+        <div class="text-xs text-[#8b949e]">${fmtInt(t.matches)} matches</div>
       </div>`).join('');
   } catch(e) {
     grid.innerHTML = `<div class="text-[#ff7b72] col-span-5 p-4">${e.message}</div>`;
@@ -3344,7 +3344,7 @@ function openMatchModal(matchId, event, matchData) {
   document.body.style.overflow = 'hidden';
 
   document.getElementById('modal-meta').textContent =
-    `${matchData.league || ''} · ${matchData.season || ''} · Hafta ${matchData.round || '?'} · ${matchData.match_date || ''}`;
+    `${matchData.league || ''} · ${matchData.season || ''} · Matchweek ${matchData.round || '?'} · ${matchData.match_date || ''}`;
   document.getElementById('modal-title').textContent =
     `${matchData.home_team_name} — ${matchData.away_team_name}`;
 
@@ -3357,7 +3357,7 @@ function openMatchModal(matchId, event, matchData) {
         <div class="font-bold text-base ${homeW ? 'text-white' : 'text-[#8b949e]'}" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${escHtml(matchData.home_team_name)}">
           ${escHtml(matchData.home_team_name)}
         </div>
-        ${homeW ? '<div class="text-xs text-[#7ee787] mt-1 text-right">● GALİP</div>' : draw ? '<div class="text-xs text-[#ffa657] mt-1 text-right">● BERABERLİK</div>' : '<div class="text-xs text-[#8b949e] mt-1 text-right">○</div>'}
+        ${homeW ? '<div class="text-xs text-[#7ee787] mt-1 text-right">● WIN</div>' : draw ? '<div class="text-xs text-[#ffa657] mt-1 text-right">● DRAW</div>' : '<div class="text-xs text-[#8b949e] mt-1 text-right">○</div>'}
       </div>
       <div class="text-center flex-shrink-0">
         <div style="background:#161b22;border:1px solid var(--border);border-radius:12px;padding:10px 24px;display:inline-block">
@@ -3366,14 +3366,14 @@ function openMatchModal(matchId, event, matchData) {
             <span style="color:var(--border);font-weight:300;margin:0 8px;font-size:1.4rem">:</span>
             <span class="${awayW ? 'text-white' : 'text-[#8b949e]'}">${ag}</span>
           </div>
-          ${matchData.home_goals_ht != null ? `<div style="font-size:.7rem;color:var(--muted);text-align:center;margin-top:4px">İY: ${matchData.home_goals_ht} – ${matchData.away_goals_ht}</div>` : ''}
+          ${matchData.home_goals_ht != null ? `<div style="font-size:.7rem;color:var(--muted);text-align:center;margin-top:4px">HT: ${matchData.home_goals_ht} – ${matchData.away_goals_ht}</div>` : ''}
         </div>
       </div>
       <div style="min-width:0">
         <div class="font-bold text-base ${awayW ? 'text-white' : 'text-[#8b949e]'}" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${escHtml(matchData.away_team_name)}">
           ${escHtml(matchData.away_team_name)}
         </div>
-        ${awayW ? '<div class="text-xs text-[#7ee787] mt-1">● GALİP</div>' : draw ? '<div class="text-xs text-[#ffa657] mt-1">● BERABERLİK</div>' : '<div class="text-xs text-[#8b949e] mt-1">○</div>'}
+        ${awayW ? '<div class="text-xs text-[#7ee787] mt-1">● WIN</div>' : draw ? '<div class="text-xs text-[#ffa657] mt-1">● DRAW</div>' : '<div class="text-xs text-[#8b949e] mt-1">○</div>'}
       </div>
     </div>`;
 
@@ -3412,14 +3412,14 @@ async function loadMatchTab(tab) {
 }
 
 function renderPlayerStatsTable(data, match) {
-  if (!data.length) return '<div class="empty-state"><div class="icon">👥</div><p>Oyuncu verisi yok.</p></div>';
+  if (!data.length) return '<div class="empty-state"><div class="icon">👥</div><p>No player data.</p></div>';
   const rows = data.map(p => {
     const isHome = p.team_name === (match && match.home_team_name);
     return `<tr onclick="openPlayerModal(${p.source_player_id}, '${escHtml(p.player_name)}')" class="cursor-pointer">
-      <td><span class="badge ${isHome ? 'pill-home' : 'pill-away'}">${isHome ? 'Ev' : 'Dep'}</span></td>
+      <td><span class="badge ${isHome ? 'pill-home' : 'pill-away'}">${isHome ? 'Home' : 'Away'}</span></td>
       <td class="font-medium" style="white-space:nowrap">${escHtml(p.player_name || '')}</td>
       <td>${posBadge(p.position)}</td>
-      <td class="text-center text-xs">${p.substitute ? '<span class="text-[#8b949e]">yedek</span>' : '<span class="text-[#7ee787]">ilk11</span>'}</td>
+      <td class="text-center text-xs">${p.substitute ? '<span class="text-[#8b949e]">sub</span>' : '<span class="text-[#7ee787]">starter</span>'}</td>
       <td class="text-[#8b949e] text-xs text-right">${fmtInt(p.minutes_played)}'</td>
       <td class="text-[#58a6ff] font-bold text-right">${fmt(p.rating, 2)}</td>
       <td class="font-bold text-right">${p.goals ? `<span class="text-[#7ee787]">${fmtInt(p.goals)}</span>` : '<span class="text-[#8b949e]">0</span>'}</td>
@@ -3432,11 +3432,11 @@ function renderPlayerStatsTable(data, match) {
   return `<div class="overflow-x-auto">
     <table>
       <thead><tr>
-        <th></th><th>Oyuncu</th><th>Pos</th><th>Durum</th>
-        <th class="text-right">Dk</th><th class="text-right">Rating</th>
-        <th class="text-right">Gol</th><th class="text-right">Ast</th>
-        <th class="text-right">xG</th><th class="text-right">Şut</th>
-        <th class="text-right">Pas</th>
+        <th></th><th>Player</th><th>Pos</th><th>Status</th>
+        <th class="text-right">Min</th><th class="text-right">Rating</th>
+        <th class="text-right">Goals</th><th class="text-right">Ast</th>
+        <th class="text-right">xG</th><th class="text-right">Shots</th>
+        <th class="text-right">Passes</th>
       </tr></thead>
       <tbody>${rows}</tbody>
     </table>
@@ -3444,10 +3444,10 @@ function renderPlayerStatsTable(data, match) {
 }
 
 function renderShotsSection(data, match) {
-  if (!data.length) return '<div class="empty-state"><div class="icon">🎯</div><p>Şut verisi yok.</p></div>';
+  if (!data.length) return '<div class="empty-state"><div class="icon">🎯</div><p>No shot data.</p></div>';
 
-  const homeName = match?.home_team_name || 'Ev';
-  const awayName = match?.away_team_name || 'Dep';
+  const homeName = match?.home_team_name || 'Home';
+  const awayName = match?.away_team_name || 'Away';
   const homeShots = data.filter(s => s.is_home);
   const awayShots = data.filter(s => !s.is_home);
   const homeGoals = homeShots.filter(s => s.shot_type === 'goal').length;
@@ -3462,7 +3462,7 @@ function renderShotsSection(data, match) {
     const cls = shotTypeCls(s.shot_type);
     return `<tr>
       <td class="text-[#8b949e] text-xs">${fmtInt(s.time_minute)}'${s.added_time ? '+' + s.added_time : ''}</td>
-      <td><span class="badge ${s.is_home ? 'pill-home' : 'pill-away'}">${s.is_home ? 'Ev' : 'Dep'}</span></td>
+      <td><span class="badge ${s.is_home ? 'pill-home' : 'pill-away'}">${s.is_home ? 'Home' : 'Away'}</span></td>
       <td style="white-space:nowrap">${escHtml(s.player_name || '—')}</td>
       <td><span class="badge ${cls}">${shotTypeIcon(s.shot_type)} ${s.shot_type || '—'}</span></td>
       <td class="text-[#8b949e] text-xs">${s.situation || '—'}</td>
@@ -3476,52 +3476,52 @@ function renderShotsSection(data, match) {
       <div class="rounded-lg p-3 text-center" style="background:var(--surface2);border:1px solid var(--border)">
         <div class="text-xs text-[#8b949e] mb-2 truncate font-medium">${escHtml(homeName)}</div>
         <div class="flex justify-center gap-4 text-sm">
-          <div><div class="text-lg font-bold text-[#7ee787]">${homeGoals}</div><div class="text-xs text-[#8b949e]">Gol</div></div>
-          <div><div class="text-lg font-bold">${homeShots.length}</div><div class="text-xs text-[#8b949e]">Şut</div></div>
+          <div><div class="text-lg font-bold text-[#7ee787]">${homeGoals}</div><div class="text-xs text-[#8b949e]">Goals</div></div>
+          <div><div class="text-lg font-bold">${homeShots.length}</div><div class="text-xs text-[#8b949e]">Shots</div></div>
           <div><div class="text-lg font-bold text-[#ffa657]">${homeXg.toFixed(2)}</div><div class="text-xs text-[#8b949e]">xG</div></div>
         </div>
       </div>
       <div class="rounded-lg p-3 text-center" style="background:var(--surface2);border:1px solid var(--border)">
         <div class="text-xs text-[#8b949e] mb-2 truncate font-medium">${escHtml(awayName)}</div>
         <div class="flex justify-center gap-4 text-sm">
-          <div><div class="text-lg font-bold text-[#7ee787]">${awayGoals}</div><div class="text-xs text-[#8b949e]">Gol</div></div>
-          <div><div class="text-lg font-bold">${awayShots.length}</div><div class="text-xs text-[#8b949e]">Şut</div></div>
+          <div><div class="text-lg font-bold text-[#7ee787]">${awayGoals}</div><div class="text-xs text-[#8b949e]">Goals</div></div>
+          <div><div class="text-lg font-bold">${awayShots.length}</div><div class="text-xs text-[#8b949e]">Shots</div></div>
           <div><div class="text-lg font-bold text-[#ffa657]">${awayXg.toFixed(2)}</div><div class="text-xs text-[#8b949e]">xG</div></div>
         </div>
       </div>
     </div>
     <div class="overflow-x-auto">
       <table>
-        <thead><tr><th>Dk</th><th>Taraf</th><th>Oyuncu</th><th>Tip</th><th>Durum</th><th>Bölge</th><th class="text-right">xG</th></tr></thead>
+        <thead><tr><th>Min</th><th>Side</th><th>Player</th><th>Type</th><th>Outcome</th><th>Zone</th><th class="text-right">xG</th></tr></thead>
         <tbody>${rows}</tbody>
       </table>
     </div>`;
 }
 
 function renderTeamStats(data, match) {
-  if (!data.length) return '<div class="empty-state"><div class="icon">📊</div><p>Takım istatistikleri yok.</p></div>';
+  if (!data.length) return '<div class="empty-state"><div class="icon">📊</div><p>No team stats.</p></div>';
   const allPeriod = data.filter(r => r.period === 'ALL');
-  if (!allPeriod.length) return '<div class="empty-state"><div class="icon">📊</div><p>ALL periyot verisi yok.</p></div>';
+  if (!allPeriod.length) return '<div class="empty-state"><div class="icon">📊</div><p>No ALL-period data.</p></div>';
 
   const home = allPeriod.find(r => r.team_side === 'home') || {};
   const away = allPeriod.find(r => r.team_side === 'away') || {};
-  const homeName = match?.home_team_name || 'Ev';
-  const awayName = match?.away_team_name || 'Dep';
+  const homeName = match?.home_team_name || 'Home';
+  const awayName = match?.away_team_name || 'Away';
 
   const stats = [
     { label: 'xG', hKey: 'expected_goals', aKey: 'expected_goals', dec: 2, highlight: true },
-    { label: 'Top Hakimiyeti %', hKey: 'ball_possession', aKey: 'ball_possession', dec: 1 },
-    { label: 'Toplam Şut', hKey: 'total_shots', aKey: 'total_shots', dec: 0 },
-    { label: 'İsabetli Şut', hKey: 'shots_on_target', aKey: 'shots_on_target', dec: 0 },
-    { label: 'Büyük Fırsat', hKey: 'big_chances', aKey: 'big_chances', dec: 0 },
-    { label: 'Toplam Pas', hKey: 'total_passes', aKey: 'total_passes', dec: 0 },
-    { label: 'İsabetli Pas %', hKey: 'accurate_passes_pct', aKey: 'accurate_passes_pct', dec: 1 },
-    { label: 'Anahtar Pas', hKey: 'key_passes', aKey: 'key_passes', dec: 0 },
-    { label: 'Top Kesme', hKey: 'interceptions', aKey: 'interceptions', dec: 0 },
-    { label: 'Faul', hKey: 'fouls', aKey: 'fouls', dec: 0 },
-    { label: 'Sarı Kart', hKey: 'yellow_cards', aKey: 'yellow_cards', dec: 0 },
-    { label: 'Kırmızı Kart', hKey: 'red_cards', aKey: 'red_cards', dec: 0 },
-    { label: 'Korner', hKey: 'corner_kicks', aKey: 'corner_kicks', dec: 0 },
+    { label: 'Possession %', hKey: 'ball_possession', aKey: 'ball_possession', dec: 1 },
+    { label: 'Total Shots', hKey: 'total_shots', aKey: 'total_shots', dec: 0 },
+    { label: 'Shots on Target', hKey: 'shots_on_target', aKey: 'shots_on_target', dec: 0 },
+    { label: 'Big Chances', hKey: 'big_chances', aKey: 'big_chances', dec: 0 },
+    { label: 'Total Passes', hKey: 'total_passes', aKey: 'total_passes', dec: 0 },
+    { label: 'Pass Accuracy %', hKey: 'accurate_passes_pct', aKey: 'accurate_passes_pct', dec: 1 },
+    { label: 'Key Passes', hKey: 'key_passes', aKey: 'key_passes', dec: 0 },
+    { label: 'Interceptions', hKey: 'interceptions', aKey: 'interceptions', dec: 0 },
+    { label: 'Fouls', hKey: 'fouls', aKey: 'fouls', dec: 0 },
+    { label: 'Yellow Cards', hKey: 'yellow_cards', aKey: 'yellow_cards', dec: 0 },
+    { label: 'Red Cards', hKey: 'red_cards', aKey: 'red_cards', dec: 0 },
+    { label: 'Corners', hKey: 'corner_kicks', aKey: 'corner_kicks', dec: 0 },
   ];
 
   const rows = stats.filter(s => home[s.hKey] != null || away[s.aKey] != null).map(s => {
@@ -3555,7 +3555,7 @@ function renderTeamStats(data, match) {
         <colgroup><col style="width:80px"><col><col style="width:80px"></colgroup>
         <thead><tr>
           <th class="text-right" style="max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${escHtml(homeName)}">${escHtml(homeName)}</th>
-          <th class="text-center">İstatistik</th>
+          <th class="text-center">Stat</th>
           <th style="max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${escHtml(awayName)}">${escHtml(awayName)}</th>
         </tr></thead>
         <tbody>${rows}</tbody>
@@ -3582,18 +3582,18 @@ async function openPlayerModal(playerId, playerName) {
 
     const metrics = [
       { label: 'Rating', value: fmt(s.avg_rating, 2), color: '#58a6ff', icon: '⭐' },
-      { label: 'Gol', value: fmtInt(s.total_goals), color: '#7ee787', icon: '⚽' },
-      { label: 'Asist', value: fmtInt(s.total_assists), color: '#7ee787', icon: '🎯' },
+      { label: 'Goals', value: fmtInt(s.total_goals), color: '#7ee787', icon: '⚽' },
+      { label: 'Assists', value: fmtInt(s.total_assists), color: '#7ee787', icon: '🎯' },
       { label: 'xG', value: fmt(s.total_xg), color: '#ffa657', icon: '📈' },
       { label: 'xA', value: fmt(s.total_xa), color: '#ffa657', icon: '📊' },
-      { label: 'Şut', value: fmtInt(s.total_shots), color: '#c9d1d9', icon: '🎯' },
-      { label: 'Maç', value: fmtInt(s.matches_played), color: '#c9d1d9', icon: '🏟️' },
-      { label: 'Dakika', value: fmtInt(s.total_minutes) + "'", color: '#8b949e', icon: '⏱️' },
+      { label: 'Shots', value: fmtInt(s.total_shots), color: '#c9d1d9', icon: '🎯' },
+      { label: 'Apps', value: fmtInt(s.matches_played), color: '#c9d1d9', icon: '🏟️' },
+      { label: 'Minutes', value: fmtInt(s.total_minutes) + "'", color: '#8b949e', icon: '⏱️' },
     ];
 
     const passAcc = s.pass_accuracy_pct != null ? `<span class="font-bold text-[#58a6ff]">${fmt(s.pass_accuracy_pct, 1)}%</span>` : '—';
 
-    // Gol vs xG diff
+    // Goals vs xG diff
     const goalDiff = fmtDiff(s.total_goals, s.total_xg);
 
     el.innerHTML = `
@@ -3606,7 +3606,7 @@ async function openPlayerModal(playerId, playerName) {
             ${posBadge(s.position)}
             <span class="text-xs text-[#8b949e]">${escHtml(s.team_name || '')}</span>
           </div>
-          <div class="text-xs text-[#8b949e] mt-0.5">Gol – xG: ${goalDiff} · Pas isabetiyet: ${passAcc}</div>
+          <div class="text-xs text-[#8b949e] mt-0.5">Goals – xG: ${goalDiff} · Pass accuracy: ${passAcc}</div>
         </div>
       </div>
 
@@ -3618,17 +3618,17 @@ async function openPlayerModal(playerId, playerName) {
           </div>`).join('')}
       </div>
 
-      <h3 class="text-xs font-semibold text-[#8b949e] uppercase tracking-widest mb-3">🧠 Benzer Oyuncular (GNN)</h3>
-      <div id="pmodal-similar" class="mb-5"><div class="text-xs text-[#8b949e]">Yükleniyor…</div></div>
+      <h3 class="text-xs font-semibold text-[#8b949e] uppercase tracking-widest mb-3">🧠 Similar Players (GNN)</h3>
+      <div id="pmodal-similar" class="mb-5"><div class="text-xs text-[#8b949e]">Loading…</div></div>
 
-      <h3 class="text-xs font-semibold text-[#8b949e] uppercase tracking-widest mb-3">Maç Geçmişi</h3>
+      <h3 class="text-xs font-semibold text-[#8b949e] uppercase tracking-widest mb-3">Match History</h3>
       <div class="overflow-x-auto">
         <table>
           <thead><tr>
-            <th>Tarih</th><th>Maç</th>
-            <th class="text-right">Dk</th><th class="text-right">Rating</th>
-            <th class="text-right">Gol</th><th class="text-right">Ast</th>
-            <th class="text-right">xG</th><th class="text-right">Şut</th>
+            <th>Date</th><th>Match</th>
+            <th class="text-right">Min</th><th class="text-right">Rating</th>
+            <th class="text-right">Goals</th><th class="text-right">Ast</th>
+            <th class="text-right">xG</th><th class="text-right">Shots</th>
           </tr></thead>
           <tbody>
             ${d.matches.map(m => `
@@ -3671,10 +3671,10 @@ async function loadPlayerModalSimilar(playerId) {
       </tr>`;
     }).join('');
     wrap.innerHTML = rows
-      ? `<div class="overflow-x-auto"><table><thead><tr><th>Oyuncu</th><th>Takım</th><th>Mev.</th><th>Sinerji</th></tr></thead><tbody>${rows}</tbody></table></div>`
-      : '<div class="text-xs text-[#8b949e]">Bu oyuncu GNN graf\'ında yok veya komşu önerisi bulunamadı.</div>';
+      ? `<div class="overflow-x-auto"><table><thead><tr><th>Player</th><th>Team</th><th>Pos.</th><th>Synergy</th></tr></thead><tbody>${rows}</tbody></table></div>`
+      : '<div class="text-xs text-[#8b949e]">This player is not in the GNN graph or no neighbours were found.</div>';
   } catch (e) {
-    wrap.innerHTML = `<div class="text-xs text-[#ff7b72]">GNN benzer oyuncular yüklenemedi: ${e.message}</div>`;
+    wrap.innerHTML = `<div class="text-xs text-[#ff7b72]">Could not load GNN similar players: ${e.message}</div>`;
   }
 }
 
@@ -3725,36 +3725,36 @@ async function openTeamModal(teamId, teamName) {
       if (totalXgF > 0) {
         xgHtml = `<div class="text-center">
           <div class="text-lg font-bold text-[#ffa657]">${totalXgF.toFixed(1)}</div>
-          <div class="text-xs text-[#8b949e]">Toplam xG</div>
+          <div class="text-xs text-[#8b949e]">Total xG</div>
         </div>`;
       }
     }
 
     el.innerHTML = `
       <div class="grid grid-cols-2 gap-3 mb-4">
-        ${metricCard('Maç', d.matches.length, '#c9d1d9')}
-        ${metricCard('Galibiyet', wins, '#7ee787')}
-        ${metricCard('Beraberlik', draws, '#ffa657')}
-        ${metricCard('Mağlubiyet', losses, '#ff7b72')}
+        ${metricCard('Matches', d.matches.length, '#c9d1d9')}
+        ${metricCard('Wins', wins, '#7ee787')}
+        ${metricCard('Draws', draws, '#ffa657')}
+        ${metricCard('Losses', losses, '#ff7b72')}
       </div>
       <div class="grid grid-cols-3 gap-3 mb-4">
         <div class="metric-card text-center">
-          <div class="text-xs text-[#8b949e] mb-1">Atılan / Yenilen</div>
+          <div class="text-xs text-[#8b949e] mb-1">Scored / Conceded</div>
           <div class="font-bold"><span class="text-[#7ee787]">${gf}</span> – <span class="text-[#ff7b72]">${ga}</span></div>
         </div>
         <div class="metric-card text-center">
-          <div class="text-xs text-[#8b949e] mb-1">Kazanma %</div>
+          <div class="text-xs text-[#8b949e] mb-1">Win %</div>
           <div class="text-lg font-bold text-[#58a6ff]">${winPct}%</div>
         </div>
         <div class="metric-card text-center">
-          <div class="text-xs text-[#8b949e] mb-2">Son 5 Maç</div>
+          <div class="text-xs text-[#8b949e] mb-2">Last 5 Matches</div>
           <div class="flex gap-1 justify-center">${formStr || '<span class="text-[#8b949e]">—</span>'}</div>
         </div>
       </div>
-      <h3 class="text-xs font-semibold text-[#8b949e] uppercase tracking-widest mb-3">Maç Geçmişi</h3>
+      <h3 class="text-xs font-semibold text-[#8b949e] uppercase tracking-widest mb-3">Match History</h3>
       <div class="overflow-x-auto">
         <table>
-          <thead><tr><th>Tarih</th><th>Taraf</th><th>Rakip</th><th class="text-center">Skor</th><th class="text-center">Sonuç</th></tr></thead>
+          <thead><tr><th>Date</th><th>Side</th><th>Opponent</th><th class="text-center">Score</th><th class="text-center">Result</th></tr></thead>
           <tbody>
             ${d.matches.map(m => {
               const isHome = m.side === 'home';
@@ -3767,7 +3767,7 @@ async function openTeamModal(teamId, teamName) {
               const resultText = won ? 'G' : drew ? 'B' : 'M';
               return `<tr>
                 <td class="text-[#8b949e] text-xs whitespace-nowrap">${m.match_date||'—'}</td>
-                <td><span class="badge ${isHome?'pill-home':'pill-away'}">${isHome?'Ev':'Dep'}</span></td>
+                <td><span class="badge ${isHome?'pill-home':'pill-away'}">${isHome?'Home':'Away'}</span></td>
                 <td class="text-sm" style="max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(opponent||'')}</td>
                 <td class="font-mono font-bold text-center">${teamGoals}–${oppGoals}</td>
                 <td class="text-center"><span class="form-badge ${resultCls}">${resultText}</span></td>
@@ -3782,7 +3782,7 @@ async function openTeamModal(teamId, teamName) {
 }
 
 // ═════════════════════════════════════════════════════════════════════════════
-// PLAYER MODES (Keşfet / Scout / Karşılaştır) — replaces old Scout tab
+// PLAYER MODES (Discover / Scout / Compare) — replaces old Scout tab
 // ═════════════════════════════════════════════════════════════════════════════
 function switchPlayerMode(mode) {
   ['discover','scout','compare'].forEach(m => {
@@ -3798,9 +3798,9 @@ function switchPlayerMode(mode) {
 // TEAMS GROUP NAV (Tablo / Performans / Derinlik)
 // ═════════════════════════════════════════════════════════════════════════════
 const TEAM_GROUPS = {
-  tablo:      [['cards',    '🛡 Takımlar'],   ['standing','📋 Puan Durumu']],
-  performans: [['tactic',   '📊 Taktik'],     ['xg','🎯 xG Analizi'], ['radar','🕸 Radar']],
-  derinlik:   [['why',      '🌟 Neden Başarılı?'], ['h2h','⚔️ H2H']],
+  tablo:      [['cards',    '🛡 Teams'],   ['standing','📋 Standings']],
+  performans: [['tactic',   '📊 Tactics'],     ['xg','🎯 xG Analysis'], ['radar','🕸 Radar']],
+  derinlik:   [['why',      '🌟 Why Successful?'], ['h2h','⚔️ H2H']],
 };
 let _currentTeamGroup = 'tablo';
 
@@ -3825,7 +3825,7 @@ function showTeamGroup(g) {
 // TACTICAL LAB — drag-drop squad builder
 // ═════════════════════════════════════════════════════════════════════════════
 const TL_FORMATIONS = {
-  // viewBox 100 × 130, attack ↑ (lower y = forward). Kanatlar uçlara yayıldı.
+  // viewBox 100 × 130, attack ↑ (lower y = forward). Wingers spread to the edges.
   '4-3-3':   [['GK',50,120],['LB',9,98],['LCB',32,105],['RCB',68,105],['RB',91,98],
               ['CM',28,72],['CDM',50,84],['CM',72,72],
               ['LW',9,38],['ST',50,26],['RW',91,38]],
@@ -3854,16 +3854,16 @@ const TL_POS_FAMILY = {
 let tlState = {
   formation: '4-2-3-1',
   slots: [],          // [{idx, pos, x, y, player: null|{...}, isTransfer}]
-  anchorTeam: '',     // geriye uyum: ilk seçilenin alias'ı
-  anchorTeams: [],    // çoklu seçim — kadro modu havuzu = bu listedeki takımların birleşimi
+  anchorTeam: '',     // backward compatibility: alias of the first selection
+  anchorTeams: [],    // multi-select — squad-mode pool = union of the teams in this list
   poolRaw: [],        // all players from /gnn/players
   poolFiltered: [],
   poolSearch: '',
-  poolMode: 'kadro',  // 'kadro' (anchor team only) | 'transfer' (all players)
+  poolMode: 'kadro',  // 'kadro' = squad (anchor team only) | 'transfer' (all players)
   iter: 0,
   showHeatmap: false,
   showEdges: false,
-  showAvgPos: true,    // varsayılan: gerçek avg-pos noktaları açık
+  showAvgPos: true,    // default: real avg-pos dots on
   styleMode: '',       // '', 'template', 'team'
   styleTarget: '',
 };
@@ -3876,16 +3876,16 @@ async function initTacticalLab() {
   pillsHost.innerHTML = Object.keys(TL_FORMATIONS).map(f =>
     `<button class="tl-pill ${f===tlState.formation?'active':''}" data-f="${f}" onclick="tlSetFormation('${f}')">${f}</button>`
   ).join('');
-  // anchor team — çoklu seçim: arama kutusundan ekle, chip ✕ ile sil
+  // anchor team — multi-select: add from the search box, remove with the chip ✕
   const anchorOnPick = (team) => {
     if (!team) return;
     if (!tlState.anchorTeams.includes(team)) {
       tlState.anchorTeams.push(team);
     }
-    tlState.anchorTeam = tlState.anchorTeams[0] || ''; // geriye uyum
+    tlState.anchorTeam = tlState.anchorTeams[0] || ''; // backward compatibility
     tlState.poolMode = tlState.anchorTeams.length ? 'kadro' : 'transfer';
     document.querySelectorAll('.tl-mode-btn').forEach(b => b.classList.toggle('active', b.dataset.mode === tlState.poolMode));
-    // Arama kutusunu temizle ki sıradaki takım için hazır olsun
+    // Clear the search box so it is ready for the next team
     searchClear('tl-anchor-host');
     tlRenderAnchorChips();
     tlRefreshPool();
@@ -3902,26 +3902,26 @@ async function initTacticalLab() {
   };
   makeSearchInput({
     hostId: 'tl-anchor-host',
-    placeholder: 'çapa takım ara… (birden fazla ekleyebilirsin)',
+    placeholder: 'search anchor team… (you can add several)',
     fetchUrl: (q) => `/gnn/teams?q=${encodeURIComponent(q)}&limit=20`,
-    parseResults: (r) => (r.teams || []).map(t => ({ value: t.team, label: t.team, sub: `${t.players} oyuncu` })),
+    parseResults: (r) => (r.teams || []).map(t => ({ value: t.team, label: t.team, sub: `${t.players} players` })),
     onSelect: (item) => { if (item) anchorOnPick(item.value); },
   });
-  // style picker (template + reference-team) — Tactical Lab'in kendi alanı
+  // style picker (template + reference team) — the Tactical Lab's own area
   try {
     const sd = await api('/meta/style-templates');
     const tmplSel = document.getElementById('tl-style-template');
     if (tmplSel) {
-      tmplSel.innerHTML = '<option value="">— şablon seç —</option>' +
+      tmplSel.innerHTML = '<option value="">— select template —</option>' +
         (sd.templates || []).map(t => `<option value="${escHtml(t.id)}">${escHtml(t.label)}</option>`).join('');
     }
   } catch (e) { console.error('style-templates', e); }
-  // referans takım search
+  // reference team search
   makeSearchInput({
     hostId: 'tl-style-team-host',
-    placeholder: 'referans takım…',
+    placeholder: 'reference team…',
     fetchUrl: (q) => `/gnn/teams?q=${encodeURIComponent(q)}&limit=12`,
-    parseResults: (r) => (r.teams || []).map(t => ({ value: t.team, label: t.team, sub: `${t.players} oyuncu` })),
+    parseResults: (r) => (r.teams || []).map(t => ({ value: t.team, label: t.team, sub: `${t.players} players` })),
     onSelect: (item) => { tlState.styleTarget = item ? item.value : ''; tlUpdateStyleLabel(); },
   });
   // initial pool fetch (no team filter — global pool)
@@ -3935,7 +3935,7 @@ function tlRenderAnchorChips() {
   const host = document.getElementById('tl-anchor-chips');
   if (!host) return;
   if (!tlState.anchorTeams.length) {
-    host.innerHTML = '<span class="tl-comment" style="font-size:10px">// seçili takım yok</span>';
+    host.innerHTML = '<span class="tl-comment" style="font-size:10px">// no team selected</span>';
     return;
   }
   host.innerHTML = tlState.anchorTeams.map(t => `
@@ -3963,14 +3963,14 @@ function tlUpdateStyleLabel() {
   const el = document.getElementById('tl-style-active');
   if (!el) return;
   const m = tlState.styleMode, t = tlState.styleTarget;
-  el.textContent = (m && t) ? `· stil = ${m}/${t}` : '';
+  el.textContent = (m && t) ? `· style = ${m}/${t}` : '';
 }
 
 let _tlAnalysis = null;
 
 async function tlAnalyze() {
   const filled = tlState.slots.filter(s => s.player);
-  if (filled.length < 2) { alert('En az 2 oyuncu yerleştir.'); return; }
+  if (filled.length < 2) { alert('Place at least 2 players.'); return; }
   const btn = document.getElementById('tl-btn-analyze');
   if (btn) { btn.disabled = true; btn.textContent = 'analyzing…'; }
   tlSetStatus('busy', '● analyzing…');
@@ -3996,7 +3996,7 @@ async function tlAnalyze() {
     tlRenderAnalysis();
     tlSetStatus('ready', '● ready');
   } catch (e) {
-    alert('Analiz hatası: ' + e.message);
+    alert('Analysis error: ' + e.message);
     tlSetStatus('busy', '● error');
   } finally {
     if (btn) { btn.disabled = false; btn.textContent = 'analyze()'; }
@@ -4011,10 +4011,10 @@ function tlRenderAnalysis() {
   // Team fit gauge
   const tf = _tlAnalysis.team_style_fit;
   document.getElementById('tl-team-fit').innerHTML = tf != null
-    ? `<div style="display:flex;justify-content:space-between;align-items:center"><span style="color:#8b949e;font-size:11px">Takım stil uyumu</span><span style="font-size:20px;font-weight:800;color:${_fitColor(tf)}">${tf}%</span></div>`
-    : `<div class="tl-comment">// stil hedefi yok</div>`;
+    ? `<div style="display:flex;justify-content:space-between;align-items:center"><span style="color:#8b949e;font-size:11px">Team style fit</span><span style="font-size:20px;font-weight:800;color:${_fitColor(tf)}">${tf}%</span></div>`
+    : `<div class="tl-comment">// no style target</div>`;
 
-  // Per-player slot kartları
+  // Per-player slot cards
   const slotsByPos = {};
   (_tlAnalysis.per_player_fit || []).forEach(p => { slotsByPos[p.slot] = p; });
   const cards = tlState.slots.filter(s => s.player).map(s => {
@@ -4045,11 +4045,11 @@ function tlRenderAnalysis() {
   // Replacement slot picker
   const recs = _tlAnalysis.replacements || {};
   const slotOpts = Object.keys(recs).filter(k => (recs[k] || []).length).map(k =>
-    `<option value="${k}">${k} — ${recs[k].length} aday</option>`
+    `<option value="${k}">${k} — ${recs[k].length} candidates</option>`
   ).join('');
   const pick = document.getElementById('tl-rec-slot-pick');
-  pick.innerHTML = '<option value="">— slot seç —</option>' + slotOpts;
-  document.getElementById('tl-rec-list').innerHTML = `<div class="tl-comment">// slot seç</div>`;
+  pick.innerHTML = '<option value="">— select slot —</option>' + slotOpts;
+  document.getElementById('tl-rec-list').innerHTML = `<div class="tl-comment">// select a slot</div>`;
 }
 
 function _fitColor(p) {
@@ -4062,9 +4062,9 @@ function tlRenderReplacements() {
   if (!_tlAnalysis) return;
   const slot = document.getElementById('tl-rec-slot-pick').value;
   const host = document.getElementById('tl-rec-list');
-  if (!slot) { host.innerHTML = '<div class="tl-comment">// slot seç</div>'; return; }
+  if (!slot) { host.innerHTML = '<div class="tl-comment">// select a slot</div>'; return; }
   const list = (_tlAnalysis.replacements || {})[slot] || [];
-  if (!list.length) { host.innerHTML = '<div class="tl-comment">// öneri yok</div>'; return; }
+  if (!list.length) { host.innerHTML = '<div class="tl-comment">// no suggestions</div>'; return; }
   host.innerHTML = list.map((r, i) => {
     const c = r.components || {};
     const bars = ['position', 'style_fit', 'perf', 'synergy'].map(k => {
@@ -4083,14 +4083,14 @@ function tlRenderReplacements() {
       <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:3px">
         <div>
           <strong style="font-size:11px;color:#e6edf3">#${i+1} ${escHtml(r.name)}</strong>
-          <div style="font-size:9px;color:#8b949e">${escHtml(r.team || '')} · ${r.position || ''} · ${r.raw?.minutes || 0} dk · rating ${(r.raw?.rating || 0).toFixed(2)}</div>
+          <div style="font-size:9px;color:#8b949e">${escHtml(r.team || '')} · ${r.position || ''} · ${r.raw?.minutes || 0} min · rating ${(r.raw?.rating || 0).toFixed(2)}</div>
         </div>
         <span style="font-size:14px;color:#56d364;font-weight:800">${(r.combined_score*100).toFixed(0)}</span>
       </div>
       ${bars}
       <div class="flex gap-1 mt-1">
-        <button class="tl-btn" style="font-size:9px;padding:2px 6px" onclick="tlAcceptSuggestion(${slotIdx},'${r.pid}','${escHtml(r.name).replace(/'/g,'')}','${escHtml(r.team || '').replace(/'/g,'')}','${r.position || ''}')">→ Bu transferi yap</button>
-        <button class="tl-btn" style="font-size:9px;padding:2px 6px" onclick="openPlayerModal(${numId}, '${escHtml(r.name).replace(/'/g,'')}')">👁 detay</button>
+        <button class="tl-btn" style="font-size:9px;padding:2px 6px" onclick="tlAcceptSuggestion(${slotIdx},'${r.pid}','${escHtml(r.name).replace(/'/g,'')}','${escHtml(r.team || '').replace(/'/g,'')}','${r.position || ''}')">→ Make this transfer</button>
+        <button class="tl-btn" style="font-size:9px;padding:2px 6px" onclick="openPlayerModal(${numId}, '${escHtml(r.name).replace(/'/g,'')}')">👁 details</button>
       </div>
     </div>`;
   }).join('');
@@ -4122,7 +4122,7 @@ function tlApplyPoolFilter() {
   const q = (tlState.poolSearch || '').toLowerCase().trim();
   const placedIds = new Set(tlState.slots.filter(s => s.player).map(s => s.player.pid));
   let out = tlState.poolRaw.filter(p => !placedIds.has(p.pid));
-  // Mode filter: kadro = only anchor team; transfer = everyone
+  // Mode filter: kadro (squad) = only anchor team; transfer = everyone
   if (tlState.poolMode === 'kadro' && tlState.anchorTeams.length) {
     const set = new Set(tlState.anchorTeams);
     out = out.filter(p => set.has(p.team));
@@ -4164,7 +4164,7 @@ function tlRenderPool() {
       <span class="tl-ppos">${p.pos}</span>
       <span class="tl-povr">${p.ovr}</span>
     </div>`;
-  }).join('') || `<div class="tl-comment" style="padding:14px;text-align:center">// boş havuz</div>`;
+  }).join('') || `<div class="tl-comment" style="padding:14px;text-align:center">// empty pool</div>`;
 }
 
 function tlOnPoolSearch(v) { tlState.poolSearch = v; tlApplyPoolFilter(); }
@@ -4306,11 +4306,11 @@ function tlPitchBg() {
 function tlRender() {
   const svg = document.getElementById('tl-pitch');
   let inner = tlPitchBg();
-  // heatmap layer — per-player ham X/Y noktaları (maç bazlı) bazlı Gaussian
-  // (kaynak X/Y → TL 100×130)
+  // heatmap layer — Gaussian over per-player raw X/Y points (per match)
+  // (source X/Y → TL 100×130)
   if (tlState.showHeatmap) {
-    const pts = [];        // heatmap için yoğunluk noktaları (her oyuncudan N maç)
-    const avgPts = [];     // avg-pos referans noktaları (her oyuncudan 1)
+    const pts = [];        // density points for the heatmap (N matches per player)
+    const avgPts = [];     // avg-pos reference points (1 per player)
     for (const s of tlState.slots) {
       if (!s.player) continue;
       // sofa X 0=own goal → 100=opp goal | TL Y 0=top(attack) → 130=bot
@@ -4325,7 +4325,7 @@ function tlRender() {
           });
         }
       } else {
-        // ham yoksa avg-pos'u tek nokta olarak kullan (fallback)
+        // no raw points: use avg-pos as a single point (fallback)
         const ap = _tlAvgPosCache[s.player.pid];
         if (ap) pts.push({ x: (1 - ap.y/100)*100, y: (1 - ap.x/100)*130, w: ap.points || 1 });
       }
@@ -4365,13 +4365,13 @@ function tlRender() {
         cells += `<rect x="${x*cellW}" y="${y*cellH}" width="${cellW}" height="${cellH}" fill="rgb(${c[0]|0},${c[1]|0},${c[2]|0})" opacity="${Math.min(0.7, 0.18 + v*0.6)}" />`;
       }
       inner += `<g style="mix-blend-mode:screen;pointer-events:none">${cells}</g>`;
-      // Her oyuncunun gerçek avg-position'ı (slot ≠ gerçek konum farkını göstermek için)
-      inner += avgPts.map(p => `<circle cx="${p.x}" cy="${p.y}" r="1.1" fill="${p.isXfer ? '#d2a8ff' : '#ffffff'}" opacity="0.9" pointer-events="none"><title>${escHtml(p.name)} (gerçek avg-pos)</title></circle>`).join('');
+      // Each player's real avg-position (to show the slot ≠ real position difference)
+      inner += avgPts.map(p => `<circle cx="${p.x}" cy="${p.y}" r="1.1" fill="${p.isXfer ? '#d2a8ff' : '#ffffff'}" opacity="0.9" pointer-events="none"><title>${escHtml(p.name)} (real avg-pos)</title></circle>`).join('');
     }
   }
-  // avg-pos noktaları (heatmap'ten bağımsız, default açık) — slot ≠ gerçek konum
+  // avg-pos dots (independent of the heatmap, on by default) — slot ≠ real position
   if (tlState.showAvgPos && !tlState.showHeatmap) {
-    // heatmap zaten avg-pos noktalarını içeriyor; ayrıca çizme, çiftleme olmasın
+    // the heatmap already contains the avg-pos dots; do not draw them twice
     const dots = [];
     for (const s of tlState.slots) {
       if (!s.player) continue;
@@ -4380,17 +4380,17 @@ function tlRender() {
       const tx = (1 - ap.y / 100) * 100;
       const ty = (1 - ap.x / 100) * 130;
       const fill = s.isTransfer ? '#d2a8ff' : '#ffd166';
-      // Slot konumundan avg-pos'a ince çizgi (slot vs gerçek farkı)
+      // Thin line from the slot position to the avg-pos (slot vs real difference)
       dots.push(`<line x1="${s.x}" y1="${s.y}" x2="${tx}" y2="${ty}" stroke="${fill}" stroke-width="0.2" stroke-dasharray="0.6 0.4" opacity="0.5" pointer-events="none"/>`);
-      dots.push(`<circle cx="${tx}" cy="${ty}" r="1.0" fill="${fill}" opacity="0.85" pointer-events="none"><title>${escHtml(s.player.name)} — gerçek avg-pos (sezon)</title></circle>`);
+      dots.push(`<circle cx="${tx}" cy="${ty}" r="1.0" fill="${fill}" opacity="0.85" pointer-events="none"><title>${escHtml(s.player.name)} — real avg-pos (season)</title></circle>`);
     }
     inner += dots.join('');
   }
 
-  // edges layer (between filled slots) — GNN sinerji skoru bazlı
+  // edges layer (between filled slots) — based on the GNN synergy score
   if (tlState.showEdges) {
     const filled = tlState.slots.filter(s => s.player);
-    // Cache'lenen pair-scores'tan çek; yoksa boş (toggle açılınca paralel fetch tetiklenir)
+    // Read from the cached pair-scores; empty otherwise (turning the toggle on triggers a parallel fetch)
     const ps = _tlPairScoreCache;
     let drawn = 0;
     for (let i = 0; i < filled.length; i++) {
@@ -4399,19 +4399,19 @@ function tlRender() {
         const key = [a.player.pid, b.player.pid].sort().join('|');
         const score = ps[key];
         if (score == null) continue;
-        // score → 0..1 normalize (modelin tipik aralığı 0-1.5; clamp)
+        // score → 0..1 normalise (the model's typical range is 0-1.5; clamp)
         const v = Math.max(0, Math.min(1, score / 1.2));
-        // renk: kırmızı (zayıf) → sarı → yeşil (güçlü)
+        // colour: red (weak) → yellow → green (strong)
         const r = Math.round(220 - v * 200), g = Math.round(38 + v * 175), bl = Math.round(38 + v * 80);
         const w = 0.18 + v * 0.9;
         const op = 0.35 + v * 0.5;
-        inner += `<line x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}" stroke="rgb(${r},${g},${bl})" stroke-width="${w.toFixed(2)}" opacity="${op.toFixed(2)}"><title>${escHtml(a.player.name)} ↔ ${escHtml(b.player.name)} · sinerji=${score.toFixed(3)}</title></line>`;
+        inner += `<line x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}" stroke="rgb(${r},${g},${bl})" stroke-width="${w.toFixed(2)}" opacity="${op.toFixed(2)}"><title>${escHtml(a.player.name)} ↔ ${escHtml(b.player.name)} · synergy=${score.toFixed(3)}</title></line>`;
         drawn++;
       }
     }
     if (drawn === 0 && filled.length >= 2) {
-      // İlk açılışta hint: pair-scores fetch arka planda
-      inner += `<text x="50" y="65" fill="#56d364" font-size="2.6" text-anchor="middle" opacity="0.7" pointer-events="none">// sinerji skoru yükleniyor…</text>`;
+      // First open hint: pair-scores are fetched in the background
+      inner += `<text x="50" y="65" fill="#56d364" font-size="2.6" text-anchor="middle" opacity="0.7" pointer-events="none">// loading synergy scores…</text>`;
     }
   }
   // slots
@@ -4456,8 +4456,8 @@ function tlRender() {
   tlRecomputeInference();
 }
 
-const _tlAvgPosCache = {};   // pid → {x, y, points}  — tek ağırlıklı ortalama (avg-pos dot için)
-const _tlRawPosCache = {};   // pid → [{x, y, weight}] — maç bazlı noktalar (heatmap için)
+const _tlAvgPosCache = {};   // pid → {x, y, points}  — single weighted average (for the avg-pos dot)
+const _tlRawPosCache = {};   // pid → [{x, y, weight}] — per-match points (for the heatmap)
 
 async function tlFetchAvgPos(pid) {
   if (!pid) return null;
@@ -4507,8 +4507,8 @@ async function tlToggleHeatmap() {
   tlState.showHeatmap = !tlState.showHeatmap;
   document.getElementById('tl-btn-heatmap').classList.toggle('tl-btn-primary', tlState.showHeatmap);
   if (tlState.showHeatmap) {
-    // Per-player heatmap için: hem ham maç bazlı noktalar (asıl heatmap)
-    // hem de ortalama nokta (referans işareti için) paralel fetch.
+    // For the per-player heatmap: both the raw per-match points (the actual heatmap)
+    // and the average point (for the reference marker), fetched in parallel.
     const placed = tlState.slots.filter(s => s.player);
     await Promise.all([
       ...placed.map(s => tlFetchAvgPos(s.player.pid)),
@@ -4639,7 +4639,7 @@ function setGauge(arcEl, valEl, score) {
 
 // ─── optimize_lineup() — suggestions only ──────────────────────────────────
 async function tlOptimize() {
-  // Çapa takım opsiyonel: yoksa global havuzdan optimize edilir, varsa o takımlar öncelikli.
+  // The anchor team is optional: without it the global pool is optimised, with it those teams come first.
   tlSetStatus('busy', '● optimizing…');
   try {
     const filledMap = {};
@@ -4663,18 +4663,18 @@ async function tlOptimize() {
           </div>
           <div class="tl-cand-team">${r.position}</div>
           <div class="tl-cand-score">${(r.score*100).toFixed(0)}</div>
-        </div>`).join('') || `<div class="tl-comment">// öneri yok</div>`;
+        </div>`).join('') || `<div class="tl-comment">// no suggestions</div>`;
       return `<div class="tl-drawer-section">
         <div class="tl-comment"># slot[${s.idx}] · ${s.pos}</div>
         ${rows}
       </div>`;
     }).join('');
-    openTlDrawer(`# optimize_lineup() · ${tlState.formation}`, html || `<div class="tl-comment">// boş slot yok — kadro tam</div>`);
+    openTlDrawer(`# optimize_lineup() · ${tlState.formation}`, html || `<div class="tl-comment">// no empty slots — squad complete</div>`);
     tlSetStatus('ready', '● ready');
   } catch (e) {
     tlSetStatus('ready', '● error');
     console.error(e);
-    alert('GNN optimize hatası: ' + e.message);
+    alert('GNN optimise error: ' + e.message);
   }
 }
 
@@ -4702,21 +4702,21 @@ async function tlOpenDrawer(slotIdx) {
   if (slot.player) {
     // show player detail + remove button
     const p = slot.player;
-    const transferLabel = slot.isTransfer ? `<span class="pill" style="background:#3a1f5e;color:#d2a8ff">✦ TRANSFER</span>` : `<span class="pill">kadro</span>`;
+    const transferLabel = slot.isTransfer ? `<span class="pill" style="background:#3a1f5e;color:#d2a8ff">✦ TRANSFER</span>` : `<span class="pill">squad</span>`;
     openTlDrawer(`# slot[${slotIdx}] · ${slot.pos}`, `
       <div class="tl-drawer-section">
         <div style="font-size:14px;font-weight:700;color:#e6edf3">${escHtml(p.name)}</div>
         <div style="color:#8b949e;font-size:11px;margin-top:2px">${escHtml(p.team)} · ${p.pos} ${transferLabel}</div>
         <div class="flex gap-2 mt-3">
-          <button class="tl-btn" onclick="tlRemoveFromSlot(${slotIdx})">🗑 kaldır</button>
-          <button class="tl-btn" onclick="openPlayerModal(${String(p.pid).replace('ss_','')}, '${escHtml(p.name).replace(/'/g,'')}')">👁 detay</button>
+          <button class="tl-btn" onclick="tlRemoveFromSlot(${slotIdx})">🗑 remove</button>
+          <button class="tl-btn" onclick="openPlayerModal(${String(p.pid).replace('ss_','')}, '${escHtml(p.name).replace(/'/g,'')}')">👁 details</button>
         </div>
       </div>
-      <div class="tl-drawer-section"><div class="tl-comment">// alternatif öneriler</div><div id="tl-drawer-alts" class="tl-comment">// yükleniyor…</div></div>
+      <div class="tl-drawer-section"><div class="tl-comment">// alternative suggestions</div><div id="tl-drawer-alts" class="tl-comment">// loading…</div></div>
     `);
     tlLoadSlotAlternatives(slotIdx);
   } else {
-    openTlDrawer(`# slot[${slotIdx}] · ${slot.pos}`, `<div class="tl-drawer-section"><div class="tl-comment">// adaylar yükleniyor…</div><div id="tl-drawer-cands"></div></div>`);
+    openTlDrawer(`# slot[${slotIdx}] · ${slot.pos}`, `<div class="tl-drawer-section"><div class="tl-comment">// loading candidates…</div><div id="tl-drawer-cands"></div></div>`);
     tlLoadSlotCandidates(slotIdx);
   }
 }
@@ -4744,7 +4744,7 @@ async function tlLoadSlotCandidates(slotIdx) {
       const isXfer = hasAnchor && !anchorSet.has(tm);
       const badge = hasAnchor ? (isXfer
         ? `<span class="pill" style="background:#3a1f5e;color:#d2a8ff;font-size:9px;padding:1px 5px">TRANSFER</span>`
-        : `<span class="pill" style="font-size:9px;padding:1px 5px">kadro</span>`) : '';
+        : `<span class="pill" style="font-size:9px;padding:1px 5px">squad</span>`) : '';
       return `
       <div class="tl-cand-row" onclick="tlAcceptSuggestion(${slot.idx},'${r.player_id}','${escHtml(nm).replace(/'/g,'')}','${escHtml(tm).replace(/'/g,'')}','${r.position}'); tlCloseDrawer()">
         <div>
@@ -4753,7 +4753,7 @@ async function tlLoadSlotCandidates(slotIdx) {
         </div>
         <div class="tl-cand-score">${(r.score*100).toFixed(0)}</div>
       </div>`;
-    }).join('') : `<div class="tl-comment">// öneri yok</div>`;
+    }).join('') : `<div class="tl-comment">// no suggestions</div>`;
   } catch (e) {
     console.error(e);
   }
@@ -4767,7 +4767,7 @@ async function tlLoadSlotAlternatives(slotIdx) {
     const numPid = String(slot.player.pid).replace('ss_', '');
     const r = await fetch(`/gnn/similar/${encodeURIComponent(numPid)}?k=8`);
     if (!r.ok) {
-      if (host) host.innerHTML = `<div class="tl-comment">// veri yok (HTTP ${r.status})</div>`;
+      if (host) host.innerHTML = `<div class="tl-comment">// no data (HTTP ${r.status})</div>`;
       return;
     }
     const data = await r.json();
@@ -4780,7 +4780,7 @@ async function tlLoadSlotAlternatives(slotIdx) {
       const isXfer = hasAnchor && !anchorSet.has(tm);
       const badge = hasAnchor ? (isXfer
         ? `<span class="pill" style="background:#3a1f5e;color:#d2a8ff;font-size:9px;padding:1px 5px">TRANSFER</span>`
-        : `<span class="pill" style="font-size:9px;padding:1px 5px">kadro</span>`) : '';
+        : `<span class="pill" style="font-size:9px;padding:1px 5px">squad</span>`) : '';
       return `
       <div class="tl-cand-row" onclick="tlAcceptSuggestion(${slot.idx},'${r.player_id}','${escHtml(r.name).replace(/'/g,'')}','${escHtml(tm).replace(/'/g,'')}','${r.position}'); tlCloseDrawer()">
         <div>
@@ -4789,7 +4789,7 @@ async function tlLoadSlotAlternatives(slotIdx) {
         </div>
         <div class="tl-cand-score">${(r.score*100).toFixed(0)}</div>
       </div>`;
-    }).join('') || `<div class="tl-comment">// benzer oyuncu yok</div>`;
+    }).join('') || `<div class="tl-comment">// no similar players</div>`;
   } catch (e) {
     if (host) host.innerHTML = `<div class="tl-comment">// hata: ${escHtml(e.message)}</div>`;
   }

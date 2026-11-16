@@ -1,9 +1,9 @@
-"""FastAPI route'ları — SynergyHGT (GNN) inference endpoint'leri.
+"""FastAPI routes — SynergyHGT (GNN) inference endpoints.
 
-Mevcut rol/pozisyon sistemine dokunmadan, GNN sinerji modelini API üzerinden açar.
-- /gnn/similar/{player_id}             — embedding benzeri oyuncular
-- /gnn/squad-recommend                  — kadro tamamlama (POST)
-- /gnn/team-map/{team_name}             — takım pozisyon haritası (avg_x/avg_y)
+Exposes the GNN synergy model over the API without touching the existing role/position system.
+- /gnn/similar/{player_id}             — players with similar embeddings
+- /gnn/squad-recommend                  — squad completion (POST)
+- /gnn/team-map/{team_name}             — team position map (avg_x/avg_y)
 - /gnn/meta                             — model meta + coverage
 """
 
@@ -34,7 +34,7 @@ def _available_seasons() -> list[str]:
 
 @lru_cache(maxsize=4)
 def _engine(season: str):
-    """Lazy-load + cache SynergyEngine. Torch ağır; engine başına ~500MB."""
+    """Lazy-load + cache SynergyEngine. Torch is heavy; ~500MB per engine."""
     from src.graph.recommend import SynergyEngine
     return SynergyEngine.load(season=season)
 
@@ -42,17 +42,17 @@ def _engine(season: str):
 def _resolve_season(season: Optional[str]) -> str:
     seasons = _available_seasons()
     if not seasons:
-        raise HTTPException(503, "Hiç eğitilmiş GNN modeli yok.")
+        raise HTTPException(503, "No trained GNN model available.")
     if season is None:
         return seasons[-1]
     if season not in seasons:
-        raise HTTPException(404, f"Sezon bulunamadı: {season}. Mevcut: {seasons}")
+        raise HTTPException(404, f"Season not found: {season}. Available: {seasons}")
     return season
 
 
 def _season_join(season: str, alias: str = "t") -> tuple[str, dict]:
-    """`JOIN matches ... WHERE <sezon>` — model sezonu dışındaki maçlar karışmasın
-    (yeni sezon verisi geldikçe dakika/konum toplamları aksi halde iki sezonu toplar)."""
+    """`JOIN matches ... WHERE <season>` — keeps matches outside the model's season out
+    (otherwise minute/position sums add up two seasons as new season data arrives)."""
     from src.graph.edge_builder import _season_where
     where_sql, params = _season_where(season)
     return f"JOIN matches m ON m.match_id = {alias}.match_id {where_sql}", params
@@ -90,13 +90,13 @@ def meta(season: Optional[str] = Query(None)):
 @router.get("/similar/{player_id}")
 def similar(player_id: int, k: int = Query(12, ge=1, le=50),
             same_position: bool = True, season: Optional[str] = None):
-    """Embedding cosine benzerliği ile en yakın oyuncular."""
+    """Nearest players by embedding cosine similarity."""
     from src.graph.similar import find_similar
     season = _resolve_season(season)
     eng = _engine(season)
     pid = _pid(player_id)
     if pid not in eng.pid_to_idx:
-        raise HTTPException(404, f"GNN graph'ında oyuncu yok: {pid}")
+        raise HTTPException(404, f"Player not in the GNN graph: {pid}")
     recs = find_similar(eng, pid, k=k, same_position=same_position)
     return {
         "season": season,
@@ -119,11 +119,11 @@ def squad_recommend(payload: dict = Body(...)):
     """
     Body:
       {
-        "formation": "4-3-3",                     # FORMATIONS içinde olmalı veya slot list
+        "formation": "4-3-3",                     # must be in FORMATIONS, or a slot list
         "filled": {"GK": "ss_12345", "ST": "ss_67890"},
         "top_k": 5,
         "flexible_positions": true,
-        "season": "2025-2026"                     # opsiyonel
+        "season": "2025-2026"                     # optional
       }
     """
     season = _resolve_season(payload.get("season"))
@@ -132,12 +132,12 @@ def squad_recommend(payload: dict = Body(...)):
     if not formation:
         raise HTTPException(400, "formation gerekli.")
     if isinstance(formation, str) and formation not in FORMATIONS:
-        raise HTTPException(400, f"Bilinmeyen formasyon. Seçenekler: {list(FORMATIONS)}")
+        raise HTTPException(400, f"Unknown formation. Options: {list(FORMATIONS)}")
 
     raw_filled = payload.get("filled", {}) or {}
     filled = {k: _pid(v) for k, v in raw_filled.items() if v}
 
-    # Daha fazla aday çek; min_minutes filtresinden sonra top_k'ye kırpılır
+    # Fetch more candidates; trimmed to top_k after the min_minutes filter
     top_k = int(payload.get("top_k", 5))
     min_minutes = int(payload.get("min_minutes", 900))
     overfetch = max(top_k * 5, 30)
@@ -149,7 +149,7 @@ def squad_recommend(payload: dict = Body(...)):
         flexible_positions=bool(payload.get("flexible_positions", True)),
     )
 
-    # Performans filtresi: sezon toplam dakikası min_minutes altında olanları ele
+    # Performance filter: drop players below min_minutes total minutes in the season
     eligible_pids: set[str] | None = None
     if min_minutes > 0:
         try:
@@ -194,7 +194,7 @@ def squad_recommend(payload: dict = Body(...)):
 
 @router.post("/pair-scores")
 def pair_scores(payload: dict = Body(...)):
-    """Verilen oyuncu çiftleri için GNN sinerji skoru.
+    """GNN synergy score for the given player pairs.
 
     Body: {"pairs": [["ss_x","ss_y"], ...], "season": "2025-2026"}
     Response: [{"a": "ss_x", "b": "ss_y", "score": 0.81}, ...]
@@ -204,7 +204,7 @@ def pair_scores(payload: dict = Body(...)):
     eng = _engine(season)
     pairs = payload.get("pairs") or []
     if not isinstance(pairs, list):
-        raise HTTPException(400, "pairs list olmalı.")
+        raise HTTPException(400, "pairs must be a list.")
     out = []
     for p in pairs:
         if not (isinstance(p, (list, tuple)) and len(p) == 2):
@@ -225,7 +225,7 @@ def pair_scores(payload: dict = Body(...)):
 
 @router.get("/player/{player_id}/raw-positions")
 def player_raw_positions(player_id: int, season: Optional[str] = None):
-    """Maç başına ham avg-position noktaları (per-player heatmap için)."""
+    """Raw per-match avg-position points (for a per-player heatmap)."""
     season = _resolve_season(season)
     join_sql, params = _season_join(season)
     raw = db.read_sql(f"""
@@ -247,14 +247,14 @@ def player_raw_positions(player_id: int, season: Optional[str] = None):
 
 @router.get("/team-map/{team_name}")
 def team_map(team_name: str, season: Optional[str] = None):
-    """Avg-position scrape verisi olan oyuncuların X/Y haritası."""
+    """X/Y map of players who have avg-position data."""
     season = _resolve_season(season)
     eng = _engine(season)
     ids = [pid.removeprefix("ss_") for pid, t in zip(eng.player_ids, eng.teams)
            if t == team_name and pid.startswith("ss_") and pid[3:].isdigit()]
     if not ids:
-        raise HTTPException(404, f"Takım yok veya boş: {team_name}")
-    ids_csv = ",".join(ids)  # yalnız rakam (yukarıda isdigit) → enjeksiyon yok
+        raise HTTPException(404, f"Team not found or empty: {team_name}")
+    ids_csv = ",".join(ids)  # digits only (isdigit above) → no injection
     join_sql, params = _season_join(season)
     raw = db.read_sql(f"""
         SELECT 'ss_' || t.source_player_id::text AS player_id,
@@ -281,7 +281,7 @@ def team_map(team_name: str, season: Optional[str] = None):
 
 @router.get("/player/{player_id}/avg-position")
 def player_avg_position(player_id: int, season: Optional[str] = None):
-    """Tek oyuncunun ağırlıklı X/Y ortalaması (modal mini saha için)."""
+    """A player's weighted average X/Y (for the modal mini pitch)."""
     season = _resolve_season(season)
     join_sql, params = _season_join(season)
     raw = db.read_sql(f"""
@@ -311,22 +311,22 @@ def player_avg_position(player_id: int, season: Optional[str] = None):
 
 @router.get("/team-roster/{team_name}")
 def team_roster(team_name: str, season: Optional[str] = None):
-    """Takımın GNN graf'ındaki oyuncuları — pozisyon başına dakika DESC sıralı.
+    """Players of the team in the GNN graph — sorted by minutes DESC per position.
 
-    UI 'auto-fill' için kullanır: her formasyon slot'una en çok dakika oynayan
-    o pozisyondaki oyuncuyu yerleştirir.
+    Used by the UI 'auto-fill': each formation slot gets the player with the most
+    minutes in that position.
     """
     season = _resolve_season(season)
     eng = _engine(season)
     ids = [pid for pid, t in zip(eng.player_ids, eng.teams) if t == team_name]
     if not ids:
-        raise HTTPException(404, f"Takım yok veya boş: {team_name}")
+        raise HTTPException(404, f"Team not found or empty: {team_name}")
 
     numeric_ids = [pid.removeprefix("ss_") for pid in ids
                    if pid.startswith("ss_") and pid[3:].isdigit()]
     minutes_map: dict[str, int] = {}
     if numeric_ids:
-        ids_csv = ",".join(numeric_ids)  # yalnız rakam → enjeksiyon yok
+        ids_csv = ",".join(numeric_ids)  # digits only → no injection
         join_sql, params = _season_join(season)
         m_df = db.read_sql(f"""
             SELECT 'ss_' || t.source_player_id::text AS player_id,
@@ -351,14 +351,14 @@ def team_roster(team_name: str, season: Optional[str] = None):
 
 
 @router.get("/teams")
-def teams(q: Optional[str] = Query(None, description="İsim araması (kısmi)"),
+def teams(q: Optional[str] = Query(None, description="Name search (partial)"),
           season: Optional[str] = None, limit: int = Query(30, ge=1, le=2000)):
-    """GNN graph'taki benzersiz takım listesi (autocomplete için)."""
+    """Unique team list from the GNN graph (for autocomplete)."""
     season = _resolve_season(season)
     eng = _engine(season)
 
     def _fold(s: str) -> str:
-        # Türkçe + aksanlı karakterleri ASCII'ye indir, lower
+        # Fold Turkish + accented characters to ASCII, lower-case
         repl = str.maketrans({
             "ç": "c", "Ç": "c", "ğ": "g", "Ğ": "g", "ı": "i", "İ": "i",
             "ö": "o", "Ö": "o", "ş": "s", "Ş": "s", "ü": "u", "Ü": "u",
@@ -382,9 +382,9 @@ def teams(q: Optional[str] = Query(None, description="İsim araması (kısmi)"),
 
 @router.get("/players")
 def players(team: Optional[str] = None, position: Optional[str] = None,
-            q: Optional[str] = Query(None, description="İsim araması"),
+            q: Optional[str] = Query(None, description="Name search"),
             season: Optional[str] = None, limit: int = Query(200, ge=1, le=20000)):
-    """GNN graph içindeki oyuncu listesi (UI dropdown'ları için)."""
+    """Player list from the GNN graph (for UI dropdowns)."""
     season = _resolve_season(season)
     eng = _engine(season)
     out = []

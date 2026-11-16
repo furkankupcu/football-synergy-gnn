@@ -1,6 +1,6 @@
-"""Oyuncu benzerliği — embedding cosine similarity üzerinden.
+"""Player similarity — via cosine similarity of embeddings.
 
-İkinci hedef ("X'in yerine geçebilecek oyuncular") için iskelet.
+Skeleton for the second goal ("players who could replace X").
 """
 
 from __future__ import annotations
@@ -18,7 +18,7 @@ def find_similar(engine: SynergyEngine, player_id: str, k: int = 10,
     emb = engine._emb
     q = emb[idx]
     sims = torch.nn.functional.cosine_similarity(q.unsqueeze(0), emb)
-    sims[idx] = -1.0  # kendini hariç tut
+    sims[idx] = -1.0  # exclude the player itself
 
     if same_position:
         target_pos = engine.positions[idx]

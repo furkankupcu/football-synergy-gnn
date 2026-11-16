@@ -1,7 +1,7 @@
 # Position Evaluation Metrics
 
-Mevkiye göre oyuncu değerlendirme metrikleri.
-Kaynak kolon adları parantez içinde belirtilmiştir.
+Player evaluation metrics by position.
+column names are given in parentheses.
 
 ---
 

@@ -1,10 +1,10 @@
 """PyG HeteroData graph builder.
 
-Veri kaynakları:
-- Node feature'lar: `db.get_player_stats(season=..)` → per-90 stat + fiziki + pozisyon
-- Edge'ler: `data/graph/edges_teammate_<season>.parquet` (Phase 2 çıktısı)
+Data sources:
+- Node features: `db.get_player_stats(season=..)` → per-90 stats + physical + position
+- Edges: `data/graph/edges_teammate_<season>.parquet` (phase 2 output)
 
-Çıktı: `data/graph/hetero_<season>.pt` (torch.save) + node_id↔player_id map (.json)
+Output: `data/graph/hetero_<season>.pt` (torch.save) + node_id↔player_id map (.json)
 """
 
 from __future__ import annotations
@@ -27,7 +27,7 @@ from src.graph.positions import (
 GRAPH_DIR = Path("data/graph")
 GRAPH_DIR.mkdir(parents=True, exist_ok=True)
 
-# Node feature kolonları (per-90'a normalize edilir, eksikler impute)
+# Node feature columns (normalised to per-90, missing values imputed)
 NUMERIC_FEATURES = [
     "goals", "assists", "xg", "xa", "npxg",
     "progressive_carries", "progressive_passes",
@@ -44,7 +44,7 @@ FOOT_VALUES = ["left", "right", "both"]
 
 
 def _per90(df: pd.DataFrame) -> pd.DataFrame:
-    """Stat'ları minutes'a göre per-90'a normalize eder."""
+    """Normalise stats to per-90 using minutes."""
     out = df.copy()
     minutes = out["minutes"].replace(0, np.nan)
     for c in NUMERIC_FEATURES:
@@ -54,7 +54,7 @@ def _per90(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def _impute(df: pd.DataFrame, group_cols: list[str], cols: list[str]) -> pd.DataFrame:
-    """Lig+pozisyon medyanıyla impute, kalan NaN'ler 0."""
+    """Impute with the league+position median; remaining NaNs become 0."""
     out = df.copy()
     for c in cols:
         if c not in out.columns:
@@ -73,11 +73,11 @@ def _foot_one_hot(series: pd.Series) -> np.ndarray:
 def _build_node_features(season: str, league: str | None = None) -> tuple[pd.DataFrame, np.ndarray]:
     raw = db.get_player_stats_from_source(league=league, season=season)
     if raw.empty:
-        raise RuntimeError(f"{season}/{league}: oyuncu istatistiği bulunamadı")
+        raise RuntimeError(f"{season}/{league}: no player stats found")
 
-    # Sezon-içi transferler: oyuncuyu o sezon **en son oynadığı takım**a ata.
-    # NOT: sorgu mutlaka aynı sezonla sınırlı olmalı — aksi halde başka bir
-    # sezonun takımı eşleşmez ve transfer olan oyuncu graftan tamamen düşer.
+    # In-season transfers: assign the player to the **last team he played for** that season.
+    # NOTE: this query must be limited to the same season — otherwise a team from another
+    # season does not match and a transferred player is dropped from the graph entirely.
     where_sql, params = _season_where(season, league)
     extra = "AND" if where_sql else "WHERE"
     last_team = db.read_sql(f"""
@@ -101,8 +101,8 @@ def _build_node_features(season: str, league: str | None = None) -> tuple[pd.Dat
     df = _per90(raw)
     df = _impute(df, group_cols=["league", "position"], cols=NUMERIC_FEATURES + PHYSICAL_FEATURES)
 
-    # Pozisyon — avg_pos verisi varsa koordinat tabanlı detaylı pozisyon,
-    # yoksa base_code (G/D/M/F) → normalize fallback
+    # Position — coordinate-based detailed position when avg_pos data exists,
+    # otherwise base_code (G/D/M/F) → normalised fallback
     avg_pos = db.read_sql(f"""
         SELECT
             'ss_' || a.source_player_id::text AS player_id,
@@ -127,7 +127,7 @@ def _build_node_features(season: str, league: str | None = None) -> tuple[pd.Dat
 
     num = df[NUMERIC_FEATURES + PHYSICAL_FEATURES].to_numpy(dtype=np.float32)
 
-    # Z-score normalize numeric (positions one-hot kalır)
+    # Z-score normalise numeric features (position one-hot stays as is)
     mu = num.mean(axis=0, keepdims=True)
     sd = num.std(axis=0, keepdims=True)
     sd[sd == 0] = 1.0
@@ -139,7 +139,7 @@ def _build_node_features(season: str, league: str | None = None) -> tuple[pd.Dat
 
 def build_hetero_graph(season: str, league: str | None = None,
                        target: str = "uplift") -> HeteroData:
-    """target: 'uplift' (önerilen, gerçek sinerji) | 'joint' (eski, yıldız-bias'lı)."""
+    """target: 'uplift' (recommended, true synergy) | 'joint' (legacy, star-biased)."""
     nodes_df, x = _build_node_features(season, league)
     pid_to_idx = {pid: i for i, pid in enumerate(nodes_df["player_id"])}
 
@@ -151,7 +151,7 @@ def build_hetero_graph(season: str, league: str | None = None,
     data["player"].position = nodes_df["pos_norm"].tolist()
     data["player"].team = nodes_df["team"].tolist() if "team" in nodes_df else ["?"] * len(nodes_df)
 
-    # Faz 1.4: takım + lig kategorik ID'leri (öğrenilebilir embedding için)
+    # Phase 1.4: categorical team + league ids (for learned embeddings)
     teams_list = data["player"].team
     leagues_list = nodes_df["league"].tolist() if "league" in nodes_df else ["?"] * len(nodes_df)
     team_vocab = {t: i for i, t in enumerate(sorted(set(teams_list)))}
@@ -169,7 +169,7 @@ def build_hetero_graph(season: str, league: str | None = None,
         ed = ed[ed["player_a"].isin(pid_to_idx) & ed["player_b"].isin(pid_to_idx)]
         src = ed["player_a"].map(pid_to_idx).to_numpy()
         dst = ed["player_b"].map(pid_to_idx).to_numpy()
-        # Yönlendirmesiz: her iki yönü de ekle
+        # Undirected: add both directions
         edge_index = torch.tensor(
             np.stack([np.concatenate([src, dst]), np.concatenate([dst, src])], axis=0),
             dtype=torch.long,
@@ -177,11 +177,11 @@ def build_hetero_graph(season: str, league: str | None = None,
         attr_cols = ["minutes_together", "matches_together", "joint_g", "joint_a",
                      "joint_xg", "joint_xa", "per90_joint_output"]
         attr_vals = ed[attr_cols].to_numpy(dtype=np.float32)
-        attr_vals = np.concatenate([attr_vals, attr_vals], axis=0)  # her iki yön için
+        attr_vals = np.concatenate([attr_vals, attr_vals], axis=0)  # for both directions
 
         label_col = "per90_uplift" if target == "uplift" else "per90_joint_output"
         if label_col not in ed.columns:
-            print(f"[graph] '{label_col}' yok, 'per90_joint_output'a düşülüyor")
+            print(f"[graph] '{label_col}' missing, falling back to 'per90_joint_output'")
             label_col = "per90_joint_output"
         labels = ed[label_col].to_numpy(dtype=np.float32)
         labels = np.concatenate([labels, labels], axis=0)
@@ -193,7 +193,7 @@ def build_hetero_graph(season: str, league: str | None = None,
         data["player", "teammate", "player"].edge_attr = torch.from_numpy(attr_vals)
         data["player", "teammate", "player"].y = torch.from_numpy(labels)
     else:
-        print(f"[graph] teammate edges parquet yok: {teammate_path}")
+        print(f"[graph] teammate edges parquet missing: {teammate_path}")
 
     opp_path = GRAPH_DIR / f"edges_opponent_{season}.parquet"
     if opp_path.exists():
@@ -221,6 +221,6 @@ if __name__ == "__main__":
     p.add_argument("--season", default="2024-2025")
     p.add_argument("--league", default=None)
     p.add_argument("--target", choices=["uplift", "joint"], default="uplift",
-                   help="uplift: gerçek sinerji sinyali | joint: eski yıldız-bias'lı")
+                   help="uplift: true synergy signal | joint: legacy, star-biased")
     args = p.parse_args()
     build_hetero_graph(args.season, args.league, target=args.target)

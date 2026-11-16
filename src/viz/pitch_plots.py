@@ -1,4 +1,4 @@
-"""Pitch görselleştirmeleri — shot map, pass map, heatmap (mplsoccer)."""
+"""Pitch visualisations — shot map, pass map, heatmap (mplsoccer)."""
 
 import numpy as np
 import pandas as pd
@@ -14,7 +14,7 @@ except ImportError:
 
 def _check_mplsoccer():
     if not MPLSOCCER_AVAILABLE:
-        raise ImportError("mplsoccer kurulu değil: pip install mplsoccer")
+        raise ImportError("mplsoccer is not installed: pip install mplsoccer")
 
 
 def shot_map(
@@ -24,8 +24,8 @@ def shot_map(
     figsize: tuple = (12, 8),
 ) -> plt.Figure:
     """
-    xG balonlu shot map çizer.
-    shots: ['x','y','xg','outcome','team'] kolonlarını içermeli (StatsBomb koordinatları: 0-120, 0-80).
+    Draw a shot map with xG bubbles.
+    shots: must contain the columns ['x','y','xg','outcome','team'] (StatsBomb coordinates: 0-120, 0-80).
     """
     _check_mplsoccer()
 
@@ -52,7 +52,7 @@ def shot_map(
             non_goals["x"], non_goals["y"],
             s=scatter_size,
             c="#4fc3f7", edgecolors="#ffffff", linewidths=0.5,
-            alpha=0.7, ax=ax, label="Şut",
+            alpha=0.7, ax=ax, label="Shot",
         )
 
     if not goals.empty:
@@ -61,7 +61,7 @@ def shot_map(
             goals["x"], goals["y"],
             s=scatter_size,
             c="#f44336", edgecolors="#ffffff", linewidths=1,
-            alpha=0.9, ax=ax, label="Gol", marker="*", zorder=5,
+            alpha=0.9, ax=ax, label="Goal", marker="*", zorder=5,
         )
 
     ax.set_title(f"{team or ''} {title}", color="white", fontsize=14, pad=15)
@@ -69,7 +69,7 @@ def shot_map(
 
     total_xg = xg_col.sum()
     total_shots = len(shots)
-    ax.text(0.5, 0.02, f"Toplam Şut: {total_shots} | Toplam xG: {total_xg:.2f}",
+    ax.text(0.5, 0.02, f"Total shots: {total_shots} | Total xG: {total_xg:.2f}",
             transform=ax.transAxes, ha="center", color="#cccccc", fontsize=10)
     return fig
 
@@ -82,7 +82,7 @@ def pass_map(
     figsize: tuple = (14, 9),
 ) -> plt.Figure:
     """
-    Pas haritası çizer. passes: ['x','y','end_x','end_y','progressive','team'] kolonları.
+    Draw a pass map. passes: columns ['x','y','end_x','end_y','progressive','team'].
     """
     _check_mplsoccer()
 
@@ -100,7 +100,7 @@ def pass_map(
     fig.set_facecolor("#1a1a2e")
 
     if passes.empty:
-        ax.set_title("Veri yok", color="white")
+        ax.set_title("No data", color="white")
         return fig
 
     pitch.arrows(
@@ -120,8 +120,8 @@ def heatmap(
     figsize: tuple = (12, 8),
 ) -> plt.Figure:
     """
-    Oyuncu konumları veya top dokunuş yoğunluğu heatmap'i.
-    positions: ['x','y'] kolonlarını içermeli.
+    Heatmap of player positions or touch density.
+    positions: must contain the columns ['x','y'].
     """
     _check_mplsoccer()
 
@@ -137,7 +137,7 @@ def heatmap(
     fig.set_facecolor("#1a1a2e")
 
     if positions.empty:
-        ax.set_title("Veri yok", color="white")
+        ax.set_title("No data", color="white")
         return fig
 
     pitch.kdeplot(

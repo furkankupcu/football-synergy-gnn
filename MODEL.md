@@ -159,6 +159,41 @@ passing refines it. That is what makes the model usable for players it has never
 
 ![Ablation](docs/ablation_metrics.png)
 
+### Out-of-season test (2025-2026 → 2026-2027, preliminary)
+
+[`evaluate_temporal.py`](src/graph/evaluate_temporal.py) applies the 2025-2026 model, unchanged,
+to teammate pairs of the following season and compares the prediction with their observed
+2026-2027 uplift. Embeddings come from the full 2025-2026 graph; no 2026-2027 information
+enters the model. Pairs are split into **new pairs** (not teammates in 2025-2026 — transfers and
+new combinations) and **repeat pairs**.
+
+Baselines without the GNN:
+- **player mean** — mean 2025-2026 uplift over each player's pairs, summed for the two players;
+- **persistence** (repeat pairs only) — the pair's own 2025-2026 uplift.
+
+![Out-of-season test](docs/temporal_test.png)
+
+| Group | Min. shared minutes | n | SynergyHGT ρ | Player mean ρ | Persistence ρ |
+|---|---:|---:|---:|---:|---:|
+| new pairs | 90 | 3,283 | **0.318** | 0.230 | – |
+| new pairs | 270 | 615 | **0.487** | 0.336 | – |
+| new pairs | 450 | 52 | 0.602 | 0.472 | – |
+| repeat pairs | 90 | 5,620 | **0.374** | 0.274 | 0.198 |
+| repeat pairs | 270 | 1,497 | **0.487** | 0.345 | 0.242 |
+| repeat pairs | 450 | 116 | 0.559 | 0.312 | 0.206 |
+
+- Bootstrap (1,000 resamples of pairs) for new pairs: SynergyHGT ρ 95 % interval
+  [0.287, 0.349] at ≥ 90 min and [0.426, 0.549] at ≥ 270 min; advantage over the player-mean
+  baseline [+0.062, +0.115] and [+0.092, +0.211]. Pairs share players, so these intervals are
+  somewhat optimistic.
+- ρ rises with shared minutes because the observed uplift itself gets less noisy, not because
+  the model changes. The n = 52 / 116 rows are too small to read on their own.
+- Persistence is the weakest predictor: one season's uplift of a pair is mostly noise; the
+  model's player representations transfer better than the pair's own history.
+- **Data:** 333 matches (2026-08-07 → 2026-09-12), 13,245 pairs with ≥ 90 shared minutes
+  (median 182); 67.2 % scoreable — the rest involve players absent from the 2025-2026 graph
+  (promoted clubs, arrivals from other leagues). To be re-run as the season fills in.
+
 ---
 
 ## 5. Inference tasks
@@ -194,6 +229,7 @@ python -m src.graph.build --season 2025-2026 --target uplift
 python -m src.graph.train --season 2025-2026 --rank-weight 0.5 --weighted
 python -m src.graph.visualize --season 2025-2026   # architecture, pipeline, curves, scatter
 python -m docs.gen_model_figs                      # metric figures
+python -m src.graph.evaluate_temporal --train 2025-2026 --test 2026-2027   # out-of-season test
 ```
 
 Options: `--target uplift|joint` (build), `--split player-disjoint|random`,
@@ -211,6 +247,12 @@ Options: `--target uplift|joint` (build), `--split player-disjoint|random`,
 ---
 
 ## 9. Changelog
+
+### 2026-11-16 — out-of-season test on 2026-2027 (preliminary)
+
+- `evaluate_temporal.py`: 2025-2026 model scored on 2026-2027 teammate pairs (333 matches).
+  New pairs ρ 0.318 vs 0.230 for the player-mean baseline (≥ 90 min), 0.487 vs 0.336 (≥ 270 min).
+  See section 4.
 
 ### 2026-11-16 — phase 1.8: centre-backs in high lines
 

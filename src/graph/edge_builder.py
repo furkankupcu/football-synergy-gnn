@@ -1,14 +1,14 @@
-"""Edge agregatları — maç-bazlı lineup verisinden ikili istatistikler.
+"""Edge aggregates — pairwise statistics from match-level lineup data.
 
-Her `(player_a, player_b, season)` çifti için:
-- minutes_together : iki oyuncunun aynı takımda aynı anda sahada olduğu dakika
+For every `(player_a, player_b, season)` pair:
+- minutes_together : minutes both players were on the pitch at the same time for the same team
 - matches_together
-- joint_g, joint_a, joint_xg, joint_xa (event verisi varsa)
+- joint_g, joint_a, joint_xg, joint_xa (if event data exists)
 - per90_joint_output = (joint_g + joint_a) / minutes_together * 90
 
-`teammate` ve `opponent` kenarları ayrı çıkar. Min. filtre: ≥ 90 dakika birlikte.
+`teammate` and `opponent` edges are produced separately. Minimum filter: ≥ 90 minutes together.
 
-Çıktı: data/graph/edges_<season>.parquet (teammate ve opponent ayrı dosyalar).
+Output: data/graph/edges_<season>.parquet (separate teammate and opponent files).
 """
 
 from __future__ import annotations
@@ -27,7 +27,7 @@ MIN_MINUTES_TOGETHER = 90
 
 
 def _season_where(season: str, league: str | None = None) -> tuple[str, dict]:
-    """matches.season hem '25/26' hem '2025-2026' formatını kabul eder."""
+    """Accepts matches.season as either '25/26' or '2025-2026'."""
     where = []
     params: dict = {}
     if season:
@@ -44,12 +44,12 @@ def _season_where(season: str, league: str | None = None) -> tuple[str, dict]:
 
 
 def _load_lineups(season: str, league: str | None = None) -> pd.DataFrame:
-    """player_stats'ten lineup-benzeri DataFrame inşa eder.
+    """Build a lineup-like DataFrame from player_stats.
 
-    minutes_on/off türetilir:
+    minutes_on/off are derived:
       - starter (substitute=False): minutes_on=0, minutes_off=minutes_played
       - sub (substitute=True): minutes_on=90-minutes_played, minutes_off=90
-    NULL minutes_played olan kayıtlar (sahaya çıkmamış yedekler) elenir.
+    Rows with NULL minutes_played (unused substitutes) are dropped.
     """
     where_sql, params = _season_where(season, league)
     sql = f"""
@@ -106,7 +106,7 @@ def _load_lineups(season: str, league: str | None = None) -> pd.DataFrame:
 
 
 def _load_events(season: str, league: str | None = None) -> pd.DataFrame:
-    """player_stats'ten event DF — joint output hesaplaması için."""
+    """Event DataFrame from player_stats — for the joint output computation."""
     where_sql, params = _season_where(season, league)
     sql = f"""
         SELECT
@@ -131,10 +131,10 @@ def _overlap(a_on: int, a_off: int, b_on: int, b_off: int) -> int:
 
 
 def _per_match_pairs(group: pd.DataFrame, kind: str = "teammate") -> pd.DataFrame:
-    """Tek bir maç için pairwise overlap üretir.
+    """Produce pairwise overlaps for a single match.
 
-    kind='teammate': aynı team_id içindeki çiftler
-    kind='opponent': farklı team_id'deki çiftler (home × away)
+    kind='teammate': pairs within the same team_id
+    kind='opponent': pairs across team_ids (home × away)
     """
     rows = []
     if kind == "teammate":
@@ -165,17 +165,17 @@ def _per_match_pairs(group: pd.DataFrame, kind: str = "teammate") -> pd.DataFram
 
 
 def _solo_baseline(lineups: pd.DataFrame, events: pd.DataFrame) -> dict[str, float]:
-    """Her oyuncu için solo per90 G+A baseline (tüm sezon, tüm maçlar).
+    """Solo per-90 G+A baseline for every player (whole season, all matches).
 
-    Uplift hedef değişkeni için kullanılır:
+    Used for the uplift target:
         per90_uplift = observed_pair_per90 − (solo_a + solo_b)
 
-    Pozitif uplift = "birlikteyken beklenenden çok üretiyorlar" (sinerji).
-    Negatif uplift = "birbirlerini yokediyorlar".
+    Positive uplift = "together they produce more than expected" (synergy).
+    Negative uplift = "they cancel each other out".
 
-    Not: Pair maçları da baseline'a dahil — pragmatik kabulleniş. Oyuncu
-    başına maç sayısı yüksek olduğu için bias küçük; leave-one-out hesap
-    çok pahalı olur.
+    Note: the pair's own matches are included in the baseline — a pragmatic choice. With
+    many matches per player the bias is small; a leave-one-out baseline would be
+    very expensive.
     """
     if events.empty:
         return {}
@@ -192,10 +192,10 @@ def _solo_baseline(lineups: pd.DataFrame, events: pd.DataFrame) -> dict[str, flo
 
 
 def build_edges(season: str, league: str | None = None) -> dict[str, pd.DataFrame]:
-    """Sezon için teammate + opponent edge agregatlarını döndürür."""
+    """Return teammate + opponent edge aggregates for a season."""
     lineups = _load_lineups(season, league)
     if lineups.empty:
-        print(f"[edges] {season}: lineup verisi yok")
+        print(f"[edges] {season}: no lineup data")
         return {"teammate": pd.DataFrame(), "opponent": pd.DataFrame()}
 
     events = _load_events(season, league)
@@ -248,8 +248,8 @@ def _aggregate(pair_df: pd.DataFrame, events: pd.DataFrame | None,
         matches_together=("matches_together", "sum"),
     )
 
-    # Joint output — event verisi varsa, her maç için iki oyuncuya da ait
-    # (goals + assists)'i topla; iki oyuncunun toplamını ortak çıktı say.
+    # Joint output — if event data exists, sum (goals + assists) of both players
+    # in every match; the sum of the two counts as their joint output.
     if events is not None and not events.empty and "match_id" in pair_df.columns:
         ev = events.copy()
         ev["ga"] = ev["goals"].fillna(0) + ev["assists"].fillna(0)
@@ -291,7 +291,7 @@ def _aggregate(pair_df: pd.DataFrame, events: pd.DataFrame | None,
         (agg["joint_g"] + agg["joint_a"]) / agg["minutes_together"] * 90.0
     ).where(agg["minutes_together"] > 0, 0.0)
 
-    # Uplift = observed_pair_per90 − (solo_a + solo_b). Gerçek sinerji sinyali.
+    # Uplift = observed_pair_per90 − (solo_a + solo_b). The true synergy signal.
     if solo:
         agg["expected_per90"] = (
             agg["player_a"].map(solo).fillna(0.0)

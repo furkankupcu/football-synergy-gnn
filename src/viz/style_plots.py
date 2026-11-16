@@ -1,4 +1,4 @@
-"""Stil kümeleme ve oyun stili görselleştirmeleri (Plotly + Matplotlib)."""
+"""Style clustering and playing-style plots (Plotly + Matplotlib)."""
 
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -17,12 +17,12 @@ CLUSTER_COLORS = [
 ]
 
 CLUSTER_NAMES = {
-    0: "Pres Yapan / Yüksek Baskı",
-    1: "Pasif / Kontratakım",
-    2: "Top Hakimiyeti",
-    3: "Dengeli / Karma",
-    4: "Defansif Blok",
-    5: "Yüksek Gol / Açık Oyun",
+    0: "Pressing / High Intensity",
+    1: "Passive / Counter-Attacking",
+    2: "Possession",
+    3: "Balanced / Mixed",
+    4: "Defensive Block",
+    5: "High Scoring / Open Game",
 }
 
 
@@ -33,7 +33,7 @@ def style_scatter(
     y_col: str = "PC2",
     cluster_col: str = "cluster",
 ) -> "go.Figure | plt.Figure":
-    """Takımları 2D PCA uzayında kümelere göre gösteren scatter plot."""
+    """Scatter plot of teams in 2D PCA space, coloured by cluster."""
     df = clustered_teams.copy()
     df["cluster_name"] = df[cluster_col].map(CLUSTER_NAMES).fillna(df[cluster_col].astype(str))
 
@@ -43,7 +43,7 @@ def style_scatter(
             x=x_col, y=y_col,
             color="cluster_name",
             text=team_col,
-            title="Süper Lig Takım Stil Kümeleme (PCA)",
+            title="Team Style Clusters (PCA)",
             template="plotly_dark",
             color_discrete_sequence=CLUSTER_COLORS,
         )
@@ -70,7 +70,7 @@ def style_scatter(
                     textcoords="offset points", xytext=(5, 5), color="white", fontsize=9)
     ax.set_xlabel("PC1", color="white")
     ax.set_ylabel("PC2", color="white")
-    ax.set_title("Süper Lig Takım Stil Kümeleme (PCA)", color="white")
+    ax.set_title("Team Style Clusters (PCA)", color="white")
     ax.tick_params(colors="white")
     return fig
 
@@ -80,7 +80,7 @@ def ppda_bar(
     team_col: str = "team_name",
     ppda_col: str = "ppda",
 ) -> "go.Figure | plt.Figure":
-    """Takım PPDA değerlerini sıralı bar chart olarak gösterir."""
+    """Sorted bar chart of team PPDA values."""
     df = team_stats[[team_col, ppda_col]].dropna().sort_values(ppda_col)
 
     if PLOTLY_AVAILABLE:
@@ -92,22 +92,22 @@ def ppda_bar(
             marker_color=colors,
         ))
         fig.update_layout(
-            title="PPDA — Takım Pressing Yoğunluğu",
-            xaxis_title="PPDA (Düşük = Daha Fazla Pressing)",
+            title="PPDA — Team Pressing Intensity",
+            xaxis_title="PPDA (lower = more pressing)",
             template="plotly_dark",
             plot_bgcolor="#1a1a2e",
             paper_bgcolor="#1a1a2e",
         )
-        fig.add_vline(x=8, line_dash="dash", line_color="#ffeb3b", annotation_text="Yüksek Pres Sınırı")
-        fig.add_vline(x=13, line_dash="dash", line_color="#ff9800", annotation_text="Düşük Blok Sınırı")
+        fig.add_vline(x=8, line_dash="dash", line_color="#ffeb3b", annotation_text="High Press Threshold")
+        fig.add_vline(x=13, line_dash="dash", line_color="#ff9800", annotation_text="Low Block Threshold")
         return fig
 
     fig, ax = plt.subplots(figsize=(10, 8))
     fig.set_facecolor("#1a1a2e")
     ax.set_facecolor("#1a1a2e")
     ax.barh(df[team_col], df[ppda_col], color="#4fc3f7")
-    ax.axvline(8, color="#ffeb3b", linestyle="--", label="Yüksek Pres")
-    ax.axvline(13, color="#ff9800", linestyle="--", label="Düşük Blok")
+    ax.axvline(8, color="#ffeb3b", linestyle="--", label="High Press")
+    ax.axvline(13, color="#ff9800", linestyle="--", label="Low Block")
     ax.set_xlabel("PPDA", color="white")
     ax.tick_params(colors="white")
     ax.legend(facecolor="#1a1a2e", labelcolor="white")
@@ -119,7 +119,7 @@ def xg_trend(
     team: str,
     n_matches: int = 10,
 ) -> "go.Figure | plt.Figure":
-    """Takımın son n maçındaki xG ve xGA trendini çizer."""
+    """Plot a team's xG and xGA trend over its last n matches."""
     df = fixtures.copy()
     home_mask = df["home_team"] == team if "home_team" in df.columns else pd.Series(False, index=df.index)
     away_mask = df["away_team"] == team if "away_team" in df.columns else pd.Series(False, index=df.index)
@@ -139,7 +139,7 @@ def xg_trend(
         fig.add_trace(go.Scatter(x=team_df["date"], y=team_df["xga"],
                                  mode="lines+markers", name="xGA", line_color="#f44336"))
         fig.update_layout(
-            title=f"{team} — xG Trendi (Son {n_matches} Maç)",
+            title=f"{team} — xG Trend (Last {n_matches} Matches)",
             template="plotly_dark",
             plot_bgcolor="#1a1a2e",
             paper_bgcolor="#1a1a2e",
@@ -150,5 +150,5 @@ def xg_trend(
     ax.plot(team_df["date"], team_df["xg"], color="#4caf50", marker="o", label="xG")
     ax.plot(team_df["date"], team_df["xga"], color="#f44336", marker="o", label="xGA")
     ax.legend()
-    ax.set_title(f"{team} xG Trendi")
+    ax.set_title(f"{team} xG Trend")
     return fig

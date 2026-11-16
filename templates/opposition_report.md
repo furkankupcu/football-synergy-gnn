@@ -1,8 +1,8 @@
 # Opposition Scout Report — [TEAM NAME]
 
-> **Şablon kullanımı:** Bu dosyayı `reports/opposition/[team_slug].md` altına kopyala, başlıkları doldur. EN başlık + TR/EN karışık gövde stratejisi: uluslararası okuyucu özet okuyabilsin, Türk okuyucu derinleşsin.
+> **Template usage:** copy this file to `reports/opposition/[team_slug].md` and fill in the sections. Short summaries come first so an international reader can skim; the detailed sections go deeper.
 > 
-> Kaynak referansları: [PFSA Opposition Template](https://thepfsa.co.uk/wp-content/uploads/2025/08/PFSA_Scout-Report_Opposition-Report-Master-Copy.pdf), [Schalke 04 Opposition Analysis](https://www.slideshare.net/petrchulkov/schalke-04feb), [Chris Gill — Opposition Report essentials](https://www.linkedin.com/pulse/what-include-opposition-report-chris-gill).
+> References: [PFSA Opposition Template](https://thepfsa.co.uk/wp-content/uploads/2025/08/PFSA_Scout-Report_Opposition-Report-Master-Copy.pdf), [Schalke 04 Opposition Analysis](https://www.slideshare.net/petrchulkov/schalke-04feb), [Chris Gill — Opposition Report essentials](https://www.linkedin.com/pulse/what-include-opposition-report-chris-gill).
 
 ---
 
@@ -10,24 +10,23 @@
 
 | | |
 |---|---|
-| **Team / Takım** | |
-| **Coach / Teknik Direktör** | |
-| **Competition / Turnuva** | WC 2026 — Group [X] / [Knockout Round] |
-| **Report date / Rapor tarihi** | YYYY-MM-DD |
-| **Matches analyzed / İncelenen maçlar** | 3 most recent (date, opponent, result, venue) |
-| **Analyst / Analist** | Furkan Küpçü |
-| **Version / Versiyon** | v0.1 |
+| **Team** | |
+| **Coach** | |
+| **Competition** | WC 2026 — Group [X] / [Knockout Round] |
+| **Report date** | YYYY-MM-DD |
+| **Matches analyzed** | 3 most recent (date, opponent, result, venue) |
+| **Analyst** | Furkan Küpçü |
+| **Version** | v0.1 |
 
 ---
 
-## 1. Executive Summary — 3 cümle
+## 1. Executive Summary — 3 sentences
 
-**EN (mandatory):**
 - *Identity:* [team] are a [possession/transition/defensive-block] side, typically setting up in a [formation] under [coach].
 - *Key strength:* [one sentence — e.g. "elite transition speed through wide overloads"].
 - *Key weakness vs Türkiye:* [one sentence — e.g. "high defensive line vulnerable to direct play behind"].
 
-**TR (opsiyonel ek not):** Türkiye için kilit tehdit ve kilit fırsat tek cümleyle.
+**Optional note:** the key threat and the key opportunity for Türkiye in one sentence.
 
 ---
 
@@ -58,16 +57,16 @@
 | LW | | | | |
 | ST | | | | |
 
-**Bench / Probable subs:** 5–7 isim, gelişe göre değişebilen kart.
+**Bench / Probable subs:** 5–7 names; may change with late news.
 
 ---
 
-## 3. In-Possession Patterns — Hücum
+## 3. In-Possession Patterns
 
 ### 3.1 Build-up
 - **Goalkeeper involvement:** [short/long, side preference]
 - **First line out:** [centre-backs split, FB high, DM drops, etc.]
-- **Provocation:** Rakip pres altında [risk alır / uzun atar / yatay rotasyon]
+- **Under pressure:** when pressed they [take risks / go long / rotate sideways]
 - **Key data:** PPDA [x], passes per defensive action — qualifying matches average
 - **Reference clips:** [match-date min'sec], [match-date min'sec]
 
@@ -83,7 +82,7 @@
 
 ---
 
-## 4. Out-of-Possession — Defans
+## 4. Out-of-Possession
 
 ### 4.1 Pressing
 - **High press trigger:** [back pass / wide trap / GK touches ball]
@@ -95,9 +94,9 @@
 - **Compactness:** [vertical compaction during attack vs out]
 - **Marking scheme:** [zonal / man / hybrid in box]
 
-### 4.3 Transition (rakibin defense → opp. attack)
+### 4.3 Transition (their defence → opponent attack)
 - **Counter-press intensity:** [seconds to first defensive action after losing ball]
-- **Vulnerability zones:** _(en sıkça gol yedikleri bölge)_
+- **Vulnerability zones:** _(where they concede most often)_
   - Right channel / left channel / between CBs / behind FB
 
 ---
@@ -116,69 +115,69 @@
 
 ---
 
-## 6. Key Players — derinlemesine 3 isim
+## 6. Key Players — 3 in depth
 
 ### 6.1 [Player 1 — usually the talisman]
-- Heat map zone, dominant foot, key strength, key weakness, Türkiye için bağ.
+- Heat map zone, dominant foot, key strength, key weakness, relevance for Türkiye.
 
 ### 6.2 [Player 2]
-- Aynı format.
+- Same format.
 
 ### 6.3 [Player 3]
-- Aynı format.
+- Same format.
 
 ---
 
-## 7. Türkiye İçin Analiz
+## 7. Analysis for Türkiye
 
-### 7.1 Threats — savunma riskleri
-1. **[Threat 1]** — örn. "fullback'lerimiz vs hızlı kanat oyuncuları, isolations"
-2. **[Threat 2]** — örn. "set-piece kaybedildiğinde hızlı transition"
+### 7.1 Threats — defensive risks
+1. **[Threat 1]** — e.g. "our fullbacks vs fast wingers, isolations"
+2. **[Threat 2]** — e.g. "quick transition after losing a set piece"
 3. **[Threat 3]**
 
-### 7.2 Opportunities — hücum yolları
-1. **[Opportunity 1]** — örn. "yüksek defansif çizgi → Akgün/Akturkoğlu derinliği"
+### 7.2 Opportunities — attacking routes
+1. **[Opportunity 1]** — e.g. "high defensive line → depth runs from Akgün/Aktürkoğlu"
 2. **[Opportunity 2]**
 3. **[Opportunity 3]**
 
-### 7.3 GNN Sinerji Önerisi _(repodaki SynergyHGT model çıktısı)_
+### 7.3 GNN Synergy Suggestion _(SynergyHGT model output from this repo)_
 
-Türkiye'nin first XI'i için bu maça özel **en yüksek sinerji** kombinasyonları:
+The **highest-synergy** combinations in Türkiye's first XI for this match:
 
-| Çift | Sinerji skoru | Pozisyon | Sezon kanıtı |
+| Pair | Synergy score | Position | Season evidence |
 |---|---|---|---|
 | | | | |
 | | | | |
 
-**Not:** Skor `model.predict_edge` çıktısıdır; sezon içi kulüp performansı baz alınır. Milli takım kompozisyonu (farklı liglerden oyuncular) için yaklaşıktır.
+**Note:** the score is the `model.predict_edge` output and is based on in-season club performance. For a national team (players from different leagues) it is an approximation.
 
 ---
 
-## 8. Tactical Recommendation — kısa
+## 8. Tactical Recommendation — short
 
-**Türkiye için 3 noktalı plan:**
-1. **Formasyon:** Önerilen sistem ve neden.
-2. **Tetikleyici an:** Maçın hangi anında ne yapılmalı (örn. "rakip pres'i tetiklediğinde, kanat oyuncusu yatık koşu").
-3. **Substitusyon planı:** 60-75. dakikalar.
+**3-point plan for Türkiye:**
+1. **Formation:** the recommended system and why.
+2. **Trigger moment:** what to do at which point of the match (e.g. "when the opponent triggers their press, the winger makes a diagonal run").
+3. **Substitution plan:** minutes 60-75.
 
 ---
 
-## 9. Visual Annex — eklenecek görseller
+## 9. Visual Annex — visuals to add
 
 - [ ] Predicted XI on pitch (mplsoccer)
-- [ ] Average position heatmap (3 maç ortalama)
-- [ ] xG/xGA trend grafiği (eleme/hazırlık maçları)
-- [ ] Set-piece freeze frame (2 örnek)
-- [ ] Türkiye için GNN sinerji haritası (mplsoccer + line)
+- [ ] Average position heatmap (3-match average)
+- [ ] xG/xGA trend chart (qualifiers/friendlies)
+- [ ] Set-piece freeze frame (2 examples)
+- [ ] GNN synergy map for Türkiye (mplsoccer + lines)
 
 ---
 
 ## 10. Sources & Methodology
 
-- **Match footage:** [maç tarihleri ve kaynak: FIFA+, FOOTreplays, official YouTube]
+- **Match footage:** [match dates and source: FIFA+, FOOTreplays, official YouTube]
 - **Data:** [FBref, FotMob, StatsBomb if any]
-- **Tactical analysis read:** [The Athletic, Spielverlagerung, Coaches' Voice — varsa link]
-- **Personal observation hours:** [tahmini izleme süresi]
+- **Tactical analysis read:** [The Athletic, Spielverlagerung, Coaches' Voice — links if any]
+- **Personal observation hours:** [estimated viewing time]
 
 ---
 
@@ -190,4 +189,4 @@ Türkiye'nin first XI'i için bu maça özel **en yüksek sinerji** kombinasyonl
 
 ---
 
-> **Kullanım sonrası:** Bu raporu PDF olarak export et (`pandoc opposition_report.md -o reports/opposition/[team]_v1.pdf`), Medium'da kısaltılmış versiyon yayınla, LinkedIn'de carousel olarak görselleri paylaş.
+> **After use:** export this report as PDF (`pandoc opposition_report.md -o reports/opposition/[team]_v1.pdf`), publish a shorter version on Medium and share the visuals as a LinkedIn carousel.
