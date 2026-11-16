@@ -23,7 +23,9 @@ from src.graph.positions import FORMATIONS, coordinate_to_position
 COMPATIBLE = {
     "GK": {"GK"}, "RB": {"RB", "RWB"}, "LB": {"LB", "LWB"}, "RWB": {"RWB", "RB"}, "LWB": {"LWB", "LB"},
     "RCB": {"RCB", "LCB"}, "LCB": {"LCB", "RCB"},
-    "CDM": {"CDM", "CM"}, "CM": {"CM", "CDM", "CAM"}, "CAM": {"CAM", "CM"},
+    # CAM also takes wide players: inside forwards play as a 10, and left/right-sided 8s get a
+    # wing label from the coordinate rule (fluid sides such as PSG need this)
+    "CDM": {"CDM", "CM"}, "CM": {"CM", "CDM", "CAM"}, "CAM": {"CAM", "CM", "LW", "RW"},
     "RW": {"RW", "LW"}, "LW": {"LW", "RW"}, "ST": {"ST"},
 }
 
