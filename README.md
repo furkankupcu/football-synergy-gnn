@@ -39,9 +39,14 @@ Season 2025/26 · 9 leagues · 4,962 players · 43.3k teammate and 151k opponent
 
 | Metric | Value | What it measures |
 |---|---:|---|
-| Test Spearman ρ | **0.371** | ranking of pairs with at least one unseen player |
-| Cold-start ρ | **0.409** | pairs where **both** players are unseen (a new signing next to a new signing) |
-| Test MSE | **0.167** | error in per-90 uplift units |
+| Test Spearman ρ | **0.356** (3 seeds: 0.356–0.362) | ranking of pairs with at least one unseen player |
+| Cold-start ρ | **0.388** (0.387–0.395) | pairs where **both** players are unseen (a new signing next to a new signing) |
+| Test MSE | **0.170** (0.170–0.171) | error in per-90 uplift units |
+
+Results are stable across initialisation seeds. An earlier version reported ρ 0.371; that
+came from one lucky seed of a model that collapsed (ρ ≈ 0.1) with two other seeds, because
+players with only a few minutes had extreme per-90 features. Those rates are now shrunk
+towards their league × position average (see [`MODEL.md`](MODEL.md#1-data-and-graph)).
 
 ![Predicted vs actual](docs/pred_vs_actual.png)
 
@@ -57,11 +62,11 @@ with a non-GNN baseline: the mean 2025/26 uplift of each player's partnerships, 
 |---|---|---:|---:|---:|
 | **New pairs** (never teammates in 2025/26) | ≥ 90 | 3,283 | **0.32** | 0.23 |
 | New pairs | ≥ 270 | 615 | **0.49** | 0.34 |
-| Repeat pairs | ≥ 90 | 5,620 | **0.37** | 0.27 (last season's own uplift: 0.20) |
+| Repeat pairs | ≥ 90 | 5,620 | **0.36** | 0.27 (last season's own uplift: 0.20) |
 
 New pairs are the scouting case: transfers and new combinations. The margin over the baseline
-holds under bootstrap resampling (95 % interval of the difference: +0.06 to +0.12 at ≥ 90 min,
-+0.09 to +0.21 at ≥ 270 min). A pair's own uplift last season is a *weaker* predictor than the
+holds under bootstrap resampling (95 % interval of the difference: +0.07 to +0.12 at ≥ 90 min,
++0.09 to +0.22 at ≥ 270 min). A pair's own uplift last season is a *weaker* predictor than the
 model, because a single season's uplift is noisy.
 
 > **Preliminary.** The 2026/27 data covers the first weeks of the season only (333 matches up to
@@ -80,7 +85,7 @@ The full technical write-up is in [`MODEL.md`](MODEL.md).
 | Component | Detail |
 |---|---|
 | Graph | Node: player. Edges: `teammate` (labelled) + `opponent` (context only) |
-| Node features | 47-dim: 29 per-90 stats + age + height (z-scored), preferred foot (3), position one-hot (13) |
+| Node features | 47-dim: 29 per-90 stats (shrunk towards league × position mean for low minutes) + age + height (z-scored), preferred foot (3), position one-hot (13) |
 | Extra embeddings | Learned team (8-dim) + league (4-dim) |
 | Encoder | 2× HGTConv, 4 heads, hidden 128 → 64-dim player embedding |
 | Edge regressor | MLP on `[e_a, e_b, \|e_a − e_b\|, e_a ⊙ e_b]` |

@@ -56,16 +56,36 @@ cold-start ρ (0.3878 → 0.4021).
 Configurations were **not** chosen on test ρ: picking the best of ten on the test set would
 turn it into a validation set.
 
+## Round 3 — per-90 shrinkage and seed stability (2026-11-16)
+
+Single change: per-90 features shrunk towards the league × position mean (k = 450 min).
+Three initialisation seeds each (the player split is fixed).
+
+| Config | seed | test ρ | cold ρ | test MSE | val MSE |
+|---|---:|---:|---:|---:|---:|
+| no shrinkage (phase 1.8) | 42 | 0.371 | 0.409 | 0.167 | 0.167 |
+| no shrinkage | 1 | 0.088 | 0.049 | 0.194 | 0.189 |
+| no shrinkage | 2 | 0.105 | 0.144 | 0.193 | 0.188 |
+| **shrinkage k=450** | 42 | 0.356 | 0.388 | 0.170 | 0.165 |
+| shrinkage k=450 | 1 | 0.358 | 0.387 | 0.171 | 0.167 |
+| shrinkage k=450 | 2 | 0.362 | 0.395 | 0.170 | 0.165 |
+
+Without shrinkage two of three seeds collapse (validation MSE stalls at 0.189, early stop at
+epoch 44): extreme per-90 values of players with a few minutes make training fragile. With
+shrinkage the three seeds agree within 0.006. **Kept.** Every single-seed result above this
+section was produced by the fragile setup; their rankings should be re-checked with 3 seeds.
+
 ## Out-of-season test — 2025-2026 model on 2026-2027 pairs (2026-11-16, preliminary)
 
 No training change; a new evaluation. 333 matches of 2026-2027, 8,903 scoreable pairs (67 %).
 
 | Pairs (≥ 90 min) | n | SynergyHGT ρ | player-mean ρ | persistence ρ |
 |---|---:|---:|---:|---:|
-| new | 3,283 | 0.318 | 0.230 | – |
-| repeat | 5,620 | 0.374 | 0.274 | 0.198 |
+| new | 3,283 | 0.323 | 0.230 | – |
+| repeat | 5,620 | 0.364 | 0.274 | 0.198 |
 
-Advantage over the player-mean baseline on new pairs: bootstrap 95 % [+0.062, +0.115].
+(phase 1.9 model; the 1.8 model gave 0.318 / 0.374.) Advantage over the player-mean baseline
+on new pairs: bootstrap 95 % [+0.068, +0.123].
 Re-run with `python -m src.graph.evaluate_temporal` as more 2026-2027 matches come in.
 
 ## Next single-variable experiments (not run yet)

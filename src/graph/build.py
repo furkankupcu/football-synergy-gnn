@@ -65,6 +65,28 @@ def _impute(df: pd.DataFrame, group_cols: list[str], cols: list[str]) -> pd.Data
     return out
 
 
+SHRINK_MINUTES = 450  # prior strength ≈ five full matches
+
+
+def _shrink(df: pd.DataFrame, group_cols: list[str], cols: list[str],
+            k: float = SHRINK_MINUTES) -> pd.DataFrame:
+    """Pull per-90 rates of low-minute players towards their league × position average.
+
+    x' = (minutes · x + k · prior) / (minutes + k), prior = minutes-weighted group mean.
+    Without it a 20-minute cameo with one goal reads as 4.5 goals per 90, and the model
+    extrapolates such players into implausibly high synergy with everyone.
+    """
+    out = df.copy()
+    m = out["minutes"].fillna(0).clip(lower=0)
+    for c in cols:
+        w = out[c] * m
+        prior = (w.groupby([out[g] for g in group_cols]).transform("sum")
+                 / m.groupby([out[g] for g in group_cols]).transform("sum").replace(0, np.nan))
+        prior = prior.fillna((w.sum() / m.sum()) if m.sum() else 0.0)
+        out[c] = (m * out[c] + k * prior) / (m + k)
+    return out
+
+
 def _foot_one_hot(series: pd.Series) -> np.ndarray:
     s = series.fillna("").astype(str).str.lower()
     return np.stack([(s == v).astype(np.float32).values for v in FOOT_VALUES], axis=1)
@@ -100,6 +122,8 @@ def _build_node_features(season: str, league: str | None = None) -> tuple[pd.Dat
 
     df = _per90(raw)
     df = _impute(df, group_cols=["league", "position"], cols=NUMERIC_FEATURES + PHYSICAL_FEATURES)
+    df = _shrink(df, group_cols=["league", "position"],
+                 cols=[c for c in NUMERIC_FEATURES if c in df.columns])
 
     # Position — coordinate-based detailed position when avg_pos data exists,
     # otherwise base_code (G/D/M/F) → normalised fallback

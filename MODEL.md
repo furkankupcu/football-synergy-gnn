@@ -3,7 +3,7 @@
 > Living document: update it whenever the model, data or evaluation changes. History lives in
 > the changelog at the end.
 
-**Last updated:** 2026-11-16 · **Season:** 2025-2026 · **Version:** phase 1.8 (position fix)
+**Last updated:** 2026-11-16 · **Season:** 2025-2026 · **Version:** phase 1.9 (feature shrinkage)
 
 ---
 
@@ -31,7 +31,15 @@ per-match average player positions (`player_avg_positions`). One season (2025-20
 | Foot | 3 | one-hot (left / right / both) |
 | Position | 13 | one-hot over the position taxonomy; the coordinate rule produces 11 of them (GK, RB, RCB, LCB, LB, CDM, CM, CAM, RW, LW, ST) — [`positions.py`](src/graph/positions.py) |
 
-Missing stats are imputed with the league × position median.
+Missing stats are imputed with the league × position median. Per-90 rates are then shrunk
+towards the minutes-weighted league × position mean,
+
+$$
+x' = \frac{m \cdot x + k \cdot \bar{x}_{\text{league, pos}}}{m + k}, \qquad k = 450 \text{ minutes},
+$$
+
+so a 20-minute cameo with one goal no longer reads as 4.5 goals per 90 ([`build.py`](src/graph/build.py) `_shrink`).
+Regulars (2,000+ minutes) barely move.
 
 **Edges.**
 - `('player', 'teammate', 'player')` — pairs who shared the pitch for the same team; labelled. m = 43.3k.
@@ -145,13 +153,28 @@ on validation ρ overfits. Seeds fixed (`torch.manual_seed(42)`, `np.random.seed
 | 1.5 | uplift | + ranking loss λ=1.0, weighted | 0.334 | 0.211 | optimises ranking directly |
 | 1.6 | uplift | data fix: missing team ids | 0.368 | 0.169 | graph 3,495 → 4,962 players |
 | 1.7 | uplift | λ = 0.5 (ablation re-run) | 0.371 | 0.167 | cold-start ρ 0.410 |
-| **1.8** | uplift | position fix for high-line centre-backs | **0.371** | **0.167** | cold-start ρ **0.409**; labels corrected, metrics unchanged |
+| 1.8 | uplift | position fix for high-line centre-backs | 0.371 | 0.167 | labels corrected; same seed-42 model as 1.7 |
+| **1.9** | uplift | per-90 shrinkage for low-minute players | **0.358** | **0.170** | mean of 3 seeds (0.356–0.362); cold-start ρ **0.390** |
+
+**Seeds.** Phases up to 1.8 were trained with seed 42 only. Re-training the 1.8 model with
+seeds 1 and 2 collapsed it (test ρ 0.088 / 0.105; validation MSE stuck at 0.189, early stop
+at epoch 44): the 0.371 was a lucky initialisation, caused by extreme per-90 features of
+players with a few minutes. With shrinkage (1.9) all three seeds land within 0.356–0.362.
+Earlier single-seed ablations (section 4 of the experiment log) should be read with that in mind.
+
+| Seed | 1.8 test ρ | 1.8 val MSE | 1.9 test ρ | 1.9 cold ρ | 1.9 val MSE |
+|---:|---:|---:|---:|---:|---:|
+| 42 | 0.371 | 0.167 | 0.356 | 0.388 | 0.165 |
+| 1 | 0.088 | 0.189 | 0.358 | 0.387 | 0.167 |
+| 2 | 0.105 | 0.188 | 0.362 | 0.395 | 0.165 |
+
+The released model is the seed-42 run of 1.9.
 
 **Reading the drop at phase 1.2.** It is not a regression. Once the trivial "sum of the two
 players' solo quality" signal is removed, what remains is the synergy signal the task is
 actually about. The old 0.74 was mostly "if a star is involved, joint output is high".
 
-**Cold-start ≥ test ρ.** Cold-start ρ (0.409, n = 2,767) is slightly higher than overall test ρ.
+**Cold-start ≥ test ρ.** Cold-start ρ (0.388, n = 2,767) is slightly higher than overall test ρ.
 The embedding is learned mostly from node features and team/league embeddings; message
 passing refines it. That is what makes the model usable for players it has never seen.
 
@@ -175,19 +198,20 @@ Baselines without the GNN:
 
 | Group | Min. shared minutes | n | SynergyHGT ρ | Player mean ρ | Persistence ρ |
 |---|---:|---:|---:|---:|---:|
-| new pairs | 90 | 3,283 | **0.318** | 0.230 | – |
-| new pairs | 270 | 615 | **0.487** | 0.336 | – |
-| new pairs | 450 | 52 | 0.602 | 0.472 | – |
-| repeat pairs | 90 | 5,620 | **0.374** | 0.274 | 0.198 |
-| repeat pairs | 270 | 1,497 | **0.487** | 0.345 | 0.242 |
-| repeat pairs | 450 | 116 | 0.559 | 0.312 | 0.206 |
+| new pairs | 90 | 3,283 | **0.323** | 0.230 | – |
+| new pairs | 270 | 615 | **0.491** | 0.336 | – |
+| new pairs | 450 | 52 | 0.463 | 0.472 | – |
+| repeat pairs | 90 | 5,620 | **0.364** | 0.274 | 0.198 |
+| repeat pairs | 270 | 1,497 | **0.462** | 0.345 | 0.242 |
+| repeat pairs | 450 | 116 | 0.352 | 0.312 | 0.206 |
 
 - Bootstrap (1,000 resamples of pairs) for new pairs: SynergyHGT ρ 95 % interval
-  [0.287, 0.349] at ≥ 90 min and [0.426, 0.549] at ≥ 270 min; advantage over the player-mean
-  baseline [+0.062, +0.115] and [+0.092, +0.211]. Pairs share players, so these intervals are
+  [0.293, 0.355] at ≥ 90 min and [0.428, 0.551] at ≥ 270 min; advantage over the player-mean
+  baseline [+0.068, +0.123] and [+0.094, +0.220] (computed by the script, stored in its JSON). Pairs share players, so these intervals are
   somewhat optimistic.
-- ρ rises with shared minutes because the observed uplift itself gets less noisy, not because
-  the model changes. The n = 52 / 116 rows are too small to read on their own.
+- ρ rises from ≥ 90 to ≥ 270 shared minutes because the observed uplift itself gets less
+  noisy, not because the model changes. The n = 52 / 116 rows (≥ 450 min) are too small to
+  read on their own; they swing by ±0.15 between model versions.
 - Persistence is the weakest predictor: one season's uplift of a pair is mostly noise; the
   model's player representations transfer better than the pair's own history.
 - **Data:** 333 matches (2026-08-07 → 2026-09-12), 13,245 pairs with ≥ 90 shared minutes
@@ -226,7 +250,7 @@ Baselines without the GNN:
 ```bash
 python -m src.graph.edge_builder --season 2025-2026
 python -m src.graph.build --season 2025-2026 --target uplift
-python -m src.graph.train --season 2025-2026 --rank-weight 0.5 --weighted
+python -m src.graph.train --season 2025-2026 --rank-weight 0.5 --weighted   # --seed N for repeats
 python -m src.graph.visualize --season 2025-2026   # architecture, pipeline, curves, scatter
 python -m docs.gen_model_figs                      # metric figures
 python -m src.graph.evaluate_temporal --train 2025-2026 --test 2026-2027   # out-of-season test
@@ -248,10 +272,23 @@ Options: `--target uplift|joint` (build), `--split player-disjoint|random`,
 
 ## 9. Changelog
 
+### 2026-11-16 — phase 1.9: per-90 shrinkage for low-minute players
+
+- Problem found while applying the model to one club: the highest predicted synergies went to
+  players with almost no minutes (a 5-minute player: 2.75 per 90 with a random partner) and to
+  some regulars far above their observed uplift (Mateta: 1.28 predicted vs 0.14 observed).
+- Fix: `_shrink` in `build.py` (k = 450 minutes, see section 1). Maximum predicted mean
+  synergy 2.75 → 0.67; Mateta 1.28 → 0.37; player-level agreement between predicted and
+  observed mean uplift (Spearman, ≥ 900 min) 0.78 → 0.80.
+- Seed check revealed that the previous model was seed-fragile (see section 4). New headline:
+  test ρ 0.358 ± 0.003, cold-start ρ 0.390, MSE 0.170 (3 seeds). `train.py` got `--seed`.
+- Out-of-season test unchanged in substance: new pairs 0.323 vs 0.230 (≥ 90 min).
+
 ### 2026-11-16 — out-of-season test on 2026-2027 (preliminary)
 
 - `evaluate_temporal.py`: 2025-2026 model scored on 2026-2027 teammate pairs (333 matches).
-  New pairs ρ 0.318 vs 0.230 for the player-mean baseline (≥ 90 min), 0.487 vs 0.336 (≥ 270 min).
+  With the 1.8 model: new pairs ρ 0.318 vs 0.230 for the player-mean baseline (≥ 90 min),
+  0.487 vs 0.336 (≥ 270 min). Section 4 shows the 1.9 numbers.
   See section 4.
 
 ### 2026-11-16 — phase 1.8: centre-backs in high lines

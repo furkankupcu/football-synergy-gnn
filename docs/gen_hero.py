@@ -1,11 +1,14 @@
 """README hero image: a team's most-used XI, edges = SynergyHGT predicted pair synergy.
 
-Usage:  python -m docs.gen_hero [team] [season]   (default: Arsenal 2025-2026)
-Output: docs/hero_synergy.png
+Usage:  python -m docs.gen_hero [team] [season] [--lineup-season S] [--out PATH]
+        (default: Arsenal 2025-2026 → docs/hero_synergy.png)
+
+--lineup-season picks the XI and average positions from another season than the model's,
+e.g. this season's squad (incl. new signings) scored by last season's model.
 """
 from __future__ import annotations
 
-import sys
+import argparse
 from itertools import combinations
 
 import matplotlib
@@ -19,9 +22,14 @@ from src.graph.edge_builder import _season_where
 from src.graph.positions import FORMATIONS
 from src.graph.recommend import SynergyEngine
 
-TEAM = sys.argv[1] if len(sys.argv) > 1 else "Arsenal"
-SEASON = sys.argv[2] if len(sys.argv) > 2 else "2025-2026"
-FORMATION = "4-3-3"
+ap = argparse.ArgumentParser()
+ap.add_argument("team", nargs="?", default="Arsenal")
+ap.add_argument("season", nargs="?", default="2025-2026", help="model season")
+ap.add_argument("--lineup-season", default=None, help="season for the XI and positions")
+ap.add_argument("--out", default="docs/hero_synergy.png")
+args = ap.parse_args()
+TEAM, SEASON = args.team, args.season
+LINEUP_SEASON = args.lineup_season or SEASON
 TOP_EDGES = 12
 # Slot → (length, width) on a 120×80 pitch, attacking upwards; width 80 = right touchline
 XY = {"GK": (8, 40), "RB": (34, 70), "RCB": (28, 50), "LCB": (28, 30), "LB": (34, 10),
@@ -29,7 +37,7 @@ XY = {"GK": (8, 40), "RB": (34, 70), "RCB": (28, 50), "LCB": (28, 30), "LB": (34
 BG, LINE, TXT, SUB = "#0b1220", "#334155", "#f1f5f9", "#94a3b8"
 
 eng = SynergyEngine.load(SEASON)
-where_sql, params = _season_where(SEASON, None)
+where_sql, params = _season_where(LINEUP_SEASON, None)
 extra = "AND" if where_sql else "WHERE"
 mins = db.read_sql(f"""
     SELECT 'ss_' || p.source_player_id::text AS player_id, SUM(p.minutes_played) AS minutes
@@ -43,7 +51,9 @@ mins = db.read_sql(f"""
 LINES = [["GK"], ["RB", "RCB", "LCB", "LB"], ["CDM", "CM", "CAM"], ["RW", "ST", "LW"]]
 LINE_OF = {"GK": 0, "RB": 1, "RCB": 1, "LCB": 1, "LB": 1, "RWB": 1, "LWB": 1,
            "CDM": 2, "CM": 2, "CAM": 2, "RW": 3, "ST": 3, "LW": 3}
-squad = sorted((i for i, t in enumerate(eng.teams) if t == TEAM and eng.player_ids[i] in mins.index),
+# Everyone who played for the team that season and exists in the model graph — new signings
+# appear under their previous club in the graph, so match on minutes, not on graph team.
+squad = sorted((eng.pid_to_idx[p] for p in mins.index if p in eng.pid_to_idx and mins[p] > 0),
                key=lambda i: -mins[eng.player_ids[i]])
 xi: dict[str, int] = {}
 for line, slots in enumerate(LINES):
@@ -98,13 +108,15 @@ halo = [patheffects.withStroke(linewidth=4, foreground=BG)]  # readable over lin
 for slot, i in xi.items():
     x, y = XY[slot]
     pitch.scatter(x, y, ax=ax, s=850, color="#1e293b", edgecolors=TXT, linewidth=1.8, zorder=3)
-    pitch.annotate(slot, (x, y), ax=ax, ha="center", va="center", color=TXT,
+    pitch.annotate(eng.positions[i], (x, y), ax=ax, ha="center", va="center", color=TXT,
                    fontsize=8, weight="bold", zorder=4)
     pitch.annotate(eng.player_names[i].split()[-1], (x - 5.8, y), ax=ax, ha="center",
                    va="center", color=TXT, fontsize=11, zorder=5, path_effects=halo)
 
-ax.set_title(f"{TEAM} · {SEASON.replace('-20', '/')} season · most-used XI",
-             color=TXT, fontsize=17, weight="bold", pad=12)
+title = f"{TEAM} · {LINEUP_SEASON.replace('-20', '/')} season · most-used XI"
+if LINEUP_SEASON != SEASON:
+    title += f"\nsynergy predicted by the {SEASON.replace('-20', '/')} model"
+ax.set_title(title, color=TXT, fontsize=17, weight="bold", pad=12)
 sm = plt.cm.ScalarMappable(cmap=colors.ListedColormap(cmap([0.25 + 0.7 * t / 255 for t in range(256)])),
                            norm=norm)
 cax = fig.add_axes([0.3, -0.005, 0.4, 0.012])
@@ -115,7 +127,6 @@ fig.text(0.5, -0.085, f"Lines: the {TOP_EDGES} strongest pairs predicted by Syne
          "their season-average position.\nSynergy = output together minus what both players "
          "produce on their own.", ha="center", color=SUB, fontsize=10, linespacing=1.5)
 
-out = "docs/hero_synergy.png"
-fig.savefig(out, dpi=150, bbox_inches="tight", facecolor=BG)
-print(out, {s: eng.player_names[i] for s, i in xi.items()})
+fig.savefig(args.out, dpi=150, bbox_inches="tight", facecolor=BG)
+print(args.out, {s: eng.player_names[i] for s, i in xi.items()})
 print([(round(s, 3), a, b) for s, a, b in top[:3]])

@@ -37,6 +37,7 @@ PHASES = [
     ("1.6 data fix: missing teams",          0.368, 0.169, True),
     ("1.7 ranking loss λ=0.5",               0.371, 0.167, True),
     ("1.8 position fix (labels only)",       0.371, 0.167, True),
+    ("1.9 feature shrinkage (3-seed mean)",  0.358, 0.170, True),
 ]
 
 

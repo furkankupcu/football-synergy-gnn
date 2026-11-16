@@ -159,9 +159,10 @@ def _cold_start_mask(
 def train(season: str, epochs: int = 100, lr: float = 1e-3, hidden: int = 128, embed_dim: int = 64,
           patience: int = 15, device: str = "cpu", split: str = "player-disjoint",
           edge_dropout: float = 0.0, weighted: bool = False, rank_weight: float = 0.0,
-          weight_decay: float = 1e-4) -> None:
-    torch.manual_seed(42)
-    np.random.seed(42)
+          weight_decay: float = 1e-4, seed: int = 42) -> None:
+    # Model-init seed only; the player split keeps its own fixed seed so runs stay comparable
+    torch.manual_seed(seed)
+    np.random.seed(seed)
 
     pt = GRAPH_DIR / f"hetero_{season}.pt"
     data: HeteroData = torch.load(pt, weights_only=False)
@@ -323,7 +324,8 @@ if __name__ == "__main__":
     p.add_argument("--rank-weight", type=float, default=0.0,
                    help="Pairwise ranking loss weight (Spearman surrogate). 0 = off")
     p.add_argument("--weight-decay", type=float, default=1e-4)
+    p.add_argument("--seed", type=int, default=42, help="model initialisation seed")
     args = p.parse_args()
     train(args.season, epochs=args.epochs, lr=args.lr, split=args.split,
           edge_dropout=args.edge_dropout, weighted=args.weighted,
-          rank_weight=args.rank_weight, weight_decay=args.weight_decay)
+          rank_weight=args.rank_weight, weight_decay=args.weight_decay, seed=args.seed)

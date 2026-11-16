@@ -84,11 +84,26 @@ def evaluate(train_season: str, test_season: str, rebuild: bool = True) -> dict:
                 "persistence": _rho(g["prev_uplift"], y) if group == "repeat pairs" else None,
             })
 
+    # Bootstrap over pairs (1,000 resamples) for new pairs: GNN ρ and its margin over the
+    # player-mean baseline. Pairs share players, so the intervals are somewhat optimistic.
+    rng = np.random.default_rng(0)
+    boot = {}
+    for min_m in MIN_MINUTES[:2]:
+        g = test[(test["minutes_together"] >= min_m) & ~test["repeat"]]
+        y, p, q = g["per90_uplift"].to_numpy(), g["pred"].to_numpy(), g["base_player_mean"].to_numpy()
+        r, d = [], []
+        for _ in range(1000):
+            i = rng.integers(0, len(g), len(g))
+            rg = spearmanr(p[i], y[i]).correlation
+            r.append(rg); d.append(rg - spearmanr(q[i], y[i]).correlation)
+        boot[f"new_pairs_min{min_m}"] = {"gnn_ci95": np.percentile(r, [2.5, 97.5]).round(3).tolist(),
+                                         "margin_ci95": np.percentile(d, [2.5, 97.5]).round(3).tolist()}
+
     out = {
         "train_season": train_season, "test_season": test_season,
         "test_pairs_total": int(n_all), "test_pairs_scored": int(len(test)),
         "coverage": round(len(test) / n_all, 3) if n_all else 0.0,
-        "results": rows,
+        "results": rows, "bootstrap": boot,
     }
     path = GRAPH_DIR / "models" / f"temporal_{train_season}_to_{test_season}.json"
     path.write_text(json.dumps(out, indent=2))
@@ -144,6 +159,7 @@ def main() -> None:
     print(f"coverage {res['coverage']:.1%} of {res['test_pairs_total']} test pairs")
     for r in res["results"]:
         print(r)
+    print(res["bootstrap"])
     fig_temporal(res)
 
 
