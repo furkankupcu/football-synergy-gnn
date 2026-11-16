@@ -33,9 +33,12 @@ class Recommendation:
 
 
 class SynergyEngine:
-    def __init__(self, data: HeteroData, model: SynergyHGT, device: str = "cpu"):
+    def __init__(self, data: HeteroData, model: SynergyHGT, device: str = "cpu",
+                 def_model: SynergyHGT | None = None):
         self.data = data.to(device)
         self.model = model.to(device).eval()
+        # Optional defensive-synergy model (target: xG conceded together); same graph, own encoder
+        self.def_model = def_model.to(device).eval() if def_model is not None else None
         self.device = device
         self.player_ids: list[str] = data["player"].player_id
         self.player_names: list[str] = data["player"].player_name
@@ -45,11 +48,12 @@ class SynergyEngine:
 
         with torch.no_grad():
             self._emb = self.model.encode(self.data)["player"]
+            self._emb_def = (self.def_model.encode(self.data)["player"]
+                             if self.def_model is not None else None)
 
-    @classmethod
-    def load(cls, season: str, device: str = "cpu") -> "SynergyEngine":
-        data: HeteroData = torch.load(GRAPH_DIR / f"hetero_{season}.pt", weights_only=False)
-        ckpt = torch.load(MODELS_DIR / f"synergy_hgt_{season}.pt", weights_only=False)
+    @staticmethod
+    def _load_model(data: HeteroData, path: Path) -> SynergyHGT:
+        ckpt = torch.load(path, weights_only=False)
         sd = ckpt["state_dict"]
         num_teams = sd["team_emb.weight"].shape[0] if "team_emb.weight" in sd else None
         num_leagues = sd["league_emb.weight"].shape[0] if "league_emb.weight" in sd else None
@@ -64,7 +68,26 @@ class SynergyEngine:
             league_emb_dim=sd["league_emb.weight"].shape[1] if num_leagues else 4,
         )
         model.load_state_dict(sd)
-        return cls(data, model, device=device)
+        return model
+
+    @classmethod
+    def load(cls, season: str, device: str = "cpu") -> "SynergyEngine":
+        data: HeteroData = torch.load(GRAPH_DIR / f"hetero_{season}.pt", weights_only=False)
+        model = cls._load_model(data, MODELS_DIR / f"synergy_hgt_{season}.pt")
+        def_path = MODELS_DIR / f"synergy_hgt_def_{season}.pt"
+        def_model = cls._load_model(data, def_path) if def_path.exists() else None
+        return cls(data, model, device=device, def_model=def_model)
+
+    def pair_scores(self, a: list[int], b: list[int], kind: str = "attack") -> torch.Tensor:
+        """Symmetric predicted synergy for index pairs (a[k], b[k]).
+        kind: 'attack' (G+A uplift) or 'defence' (xG-conceded uplift; needs the def model)."""
+        model, emb = (self.model, self._emb) if kind == "attack" else (self.def_model, self._emb_def)
+        if model is None:
+            raise RuntimeError("no defensive model — train with: python -m src.graph.train --target def")
+        src = torch.tensor(a, dtype=torch.long, device=self.device)
+        dst = torch.tensor(b, dtype=torch.long, device=self.device)
+        with torch.no_grad():
+            return (model.predict_edge(emb, src, dst) + model.predict_edge(emb, dst, src)) / 2
 
     # Position "families" — for cross-position suggestions in flexible mode
     POS_FAMILY: dict[str, set[str]] = {

@@ -9,10 +9,11 @@ combine. The learned player embeddings power three scouting tasks:
 - **Pair synergy** — how far above expectation two players perform when they share the pitch
 - **Squad completion** — the best candidates for an empty slot given the other ten players
 - **Similar players** — nearest neighbours in embedding space for recruitment shortlists
+- **Club report** — weak links of an XI, transfer candidates and the squad's highest-synergy XI
 
 <p align="center">
-  <img src="docs/hero_synergy.png" width="560"
-       alt="Arsenal 2025/26 most-used XI on a pitch at their average positions, with the 12 strongest predicted synergy pairs drawn as coloured lines">
+  <img src="docs/club/psg_xi_best_synergy.png" width="560"
+       alt="Paris Saint-Germain 2025/26: the 4-3-3 the model picks from the squad, players at their average positions, with the 12 strongest predicted synergy pairs drawn as coloured lines">
 </p>
 
 ## Why "uplift"?
@@ -78,6 +79,45 @@ The full technical write-up is in [`MODEL.md`](MODEL.md).
 
 ![Development history](docs/model_metrics.png)
 
+### What the model cannot see: defence
+
+The target counts goals and assists, so the synergy is **attacking** synergy. A defensive
+version was built and tested — xG conceded while a pair is on the pitch together, against
+what both players concede on their own — and it carries no signal in one season of data: the
+same pair's value in the first and second half of 2025/26 correlates at r ≈ 0.02 (attack:
+r ≈ 0.2), and a separately trained model reaches ρ ≈ 0.03. Conceding is the work of all eleven
+players and the opponent; it is not used anywhere (details: experiment log, round 5).
+Goalkeepers are therefore not assessed.
+
+## Club report: Paris Saint-Germain 2025/26
+
+`src/graph/club_report.py` applies the model to one club: who in the XI connects poorly, who
+outside the club would fit better, and which combination of the current squad the model rates
+highest.
+
+| Most-used Ligue 1 XI (heavy rotation) | Highest-synergy 4-3-3 from the same squad |
+|---|---|
+| <img src="docs/club/psg_xi_most_used.png" width="400" alt="PSG most-used XI with three centre-backs and no right-back"> | <img src="docs/club/psg_xi_best_synergy.png" width="400" alt="PSG highest-synergy 4-3-3"> |
+
+PSG rotated heavily in the league in 2025/26: Hakimi, João Neves and Dembélé started only
+11–15 league matches, so the most-used XI is no real line-up. Searching the squad for the
+4-3-3 with the highest summed pair synergy (players with ≥ 450 minutes), the model brings back
+Hakimi, Marquinhos, Nuno Mendes, Fabián Ruiz and Dembélé without being told who the regulars
+are — and rates the result at more than twice the most-used XI.
+
+![Transfer board](docs/club/psg_transfer_board.png)
+
+The transfer board takes the four weakest positions of the XI. **Need** combines two
+percentiles among all ≥ 900-minute players of the position in nine leagues: synergy (fit with
+the other ten minus fit with a random regular, so players who score high with everyone do not
+win automatically) and performance (match rating relative to the player's own league and
+position, because raw ratings are not comparable across leagues). Best fits are the
+candidates with the highest synergy among those at least median in performance and ≤ 32 years
+old; the value pick is ≤ €15M and ≤ 27. Club, age and market value are as of September 2026.
+
+Read it as a shortlist generator, not a verdict: it sees attacking synergy only, knows nothing
+about wages, availability or tactics, and does not separate rivals from realistic targets.
+
 ## Model
 
 ![Architecture](docs/model_architecture.png)
@@ -103,7 +143,8 @@ See [`src/graph/positions.py`](src/graph/positions.py) and its tests.
 ## Repository layout
 
 ```
-src/graph/      edge_builder → build → train, model, squad recommender, similarity
+src/graph/      edge_builder → build → train, model, squad recommender, similarity,
+                xi (most-used / highest-synergy XI), club_report, pitch_map
 src/api/        FastAPI app; GNN endpoints under /gnn/* plus a static HTML front end
 src/analysis/   role profiles, position resolution, transfer analysis
 src/tactical/   style fit, replacement ranking
@@ -123,8 +164,10 @@ app.py          Streamlit development UI
 | `matches` | match metadata (league, season, date, teams) |
 | `player_stats` | per-match player statistics (minutes, position code, passes, shots, …) |
 | `player_avg_positions` | per-match average position: `match_id`, `source_player_id`, `avg_x`, `avg_y`, `points_count` (0–100 scale) |
+| `shots` | optional — shot minute, side and xG; only for the defensive experiment |
+| `player_details` | optional — date of birth, market value, current club; only for the club report |
 
-Full schema for the first two: [`data/db/schema.sql`](data/db/schema.sql).
+Full schema for `matches`, `player_stats` and `shots`: [`data/db/schema.sql`](data/db/schema.sql).
 
 ```bash
 pip install -r requirements.txt   # see the note in the file for torch / torch-geometric wheels
@@ -139,8 +182,8 @@ python -m src.graph.train --season 2025-2026 --rank-weight 0.5 --weighted
 uvicorn src.api.main:app --reload
 
 python -m docs.gen_model_figs     # refresh figures
-python -m docs.gen_hero           # hero image (team and season as arguments)
 python -m src.graph.evaluate_temporal --train 2025-2026 --test 2026-2027   # out-of-season test
+python -m src.graph.club_report "Paris Saint-Germain" --formation 4-3-3 --min-minutes 450
 python -m pytest tests
 ```
 

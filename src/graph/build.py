@@ -216,6 +216,9 @@ def build_hetero_graph(season: str, league: str | None = None,
         data["player", "teammate", "player"].edge_index = edge_index
         data["player", "teammate", "player"].edge_attr = torch.from_numpy(attr_vals)
         data["player", "teammate", "player"].y = torch.from_numpy(labels)
+        if "def_uplift" in ed.columns:  # defensive target (xG conceded together); NaN = no shot data
+            y_def = ed["def_uplift"].to_numpy(dtype=np.float32)
+            data["player", "teammate", "player"].y_def = torch.from_numpy(np.concatenate([y_def, y_def]))
     else:
         print(f"[graph] teammate edges parquet missing: {teammate_path}")
 

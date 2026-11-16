@@ -159,7 +159,9 @@ def _cold_start_mask(
 def train(season: str, epochs: int = 100, lr: float = 1e-3, hidden: int = 128, embed_dim: int = 64,
           patience: int = 15, device: str = "cpu", split: str = "player-disjoint",
           edge_dropout: float = 0.0, weighted: bool = False, rank_weight: float = 0.0,
-          weight_decay: float = 1e-4, seed: int = 42) -> None:
+          weight_decay: float = 1e-4, seed: int = 42, target: str = "uplift") -> None:
+    """target: 'uplift' (attacking synergy, G+A) or 'def' (defensive synergy, xG conceded
+    together). Each target is a separate model: synergy_hgt[_def]_<season>.pt."""
     # Model-init seed only; the player split keeps its own fixed seed so runs stay comparable
     torch.manual_seed(seed)
     np.random.seed(seed)
@@ -174,7 +176,10 @@ def train(season: str, epochs: int = 100, lr: float = 1e-3, hidden: int = 128, e
     half = ei_full.shape[1] // 2
     pair_src = ei_full[0, :half]
     pair_dst = ei_full[1, :half]
-    y = data[et].y[:half]
+    if target == "def" and not hasattr(data[et], "y_def"):
+        raise RuntimeError("graph has no y_def — rebuild edges (edge_builder) and graph (build)")
+    y = (data[et].y_def if target == "def" else data[et].y)[:half]
+    suffix = "_def" if target == "def" else ""
 
     # Per-edge reliability weight: sqrt(minutes_together).
     # edge_attr column order (build.py): [minutes_together, matches_together, joint_g,
@@ -192,6 +197,9 @@ def train(season: str, epochs: int = 100, lr: float = 1e-3, hidden: int = 128, e
             pair_src.cpu(), pair_dst.cpu(), num_players
         )
         train_idx = train_idx.to(device); val_idx = val_idx.to(device); test_idx = test_idx.to(device)
+        # Edges without a label (def: no shot data) still pass messages but get no loss/metric
+        has_y = torch.isfinite(y)
+        train_idx, val_idx, test_idx = (i[has_y[i]] for i in (train_idx, val_idx, test_idx))
         print(f"[split] player-disjoint | players={split_info['players']} | edges={split_info['edges']}")
         if len(train_idx) == 0 or len(val_idx) == 0 or len(test_idx) == 0:
             raise RuntimeError(f"player-disjoint split produced an empty partition: {split_info}")
@@ -295,11 +303,12 @@ def train(season: str, epochs: int = 100, lr: float = 1e-3, hidden: int = 128, e
         else:
             print(f"[cold-start] n={n_cold} — too few, skipped")
 
-    out_pt = MODELS_DIR / f"synergy_hgt_{season}.pt"
+    out_pt = MODELS_DIR / f"synergy_hgt{suffix}_{season}.pt"
     torch.save({"state_dict": model.state_dict(),
                 "hidden": hidden, "embed_dim": embed_dim,
                 "test_mse": test_mse, "test_rho": rho_t}, out_pt)
-    (MODELS_DIR / f"metrics_{season}.json").write_text(json.dumps({
+    (MODELS_DIR / f"metrics{suffix}_{season}.json").write_text(json.dumps({
+        "target": target,
         "test_mse": test_mse, "test_spearman": rho_t, "best_val_mse": best_val,
         "best_val_rho": best_rho,
         "split": split, "split_info": split_info,
@@ -325,7 +334,10 @@ if __name__ == "__main__":
                    help="Pairwise ranking loss weight (Spearman surrogate). 0 = off")
     p.add_argument("--weight-decay", type=float, default=1e-4)
     p.add_argument("--seed", type=int, default=42, help="model initialisation seed")
+    p.add_argument("--target", choices=["uplift", "def"], default="uplift",
+                   help="uplift: attacking synergy (G+A); def: defensive synergy (xG conceded together)")
     args = p.parse_args()
     train(args.season, epochs=args.epochs, lr=args.lr, split=args.split,
           edge_dropout=args.edge_dropout, weighted=args.weighted,
-          rank_weight=args.rank_weight, weight_decay=args.weight_decay, seed=args.seed)
+          rank_weight=args.rank_weight, weight_decay=args.weight_decay, seed=args.seed,
+          target=args.target)

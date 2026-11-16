@@ -89,6 +89,34 @@ Same three seeds as round 3.
 Means 0.357 / 0.387 / 0.171 vs 0.358 / 0.390 / 0.170 before: unchanged within seed noise.
 **Kept** for correct labels (they drive squad completion and the per-position comparisons).
 
+## Round 5 — defensive synergy target (2026-11-16) — negative result
+
+Target: `def_uplift` = expected xG conceded per 90 (mean of the two players' on-pitch rate)
+− xG conceded per 90 while both were on the pitch (shot timing from the shot table; own goals
+skipped; missing xG imputed). Same graph, separate model (`train --target def`).
+
+| seed | test ρ | cold ρ | test MSE |
+|---:|---:|---:|---:|
+| 42 | 0.029 | 0.023 | 0.102 |
+| 1 | 0.027 | 0.006 | 0.102 |
+| 2 | 0.029 | 0.042 | 0.102 |
+
+Test MSE equals the label variance (σ = 0.317): the model predicts the mean. Split-half check
+(first vs second half of 2025-2026, same pairs) shows why — there is no stable signal to learn:
+
+| Pairs (min. minutes in both halves) | n | attack r | defence r |
+|---|---:|---:|---:|
+| ≥ 90 | 19,464 | 0.168 | 0.020 |
+| ≥ 270 | 11,131 | 0.194 | 0.015 |
+| ≥ 450 | 6,676 | 0.219 | 0.022 |
+
+A player-level version (team xG conceded per 90 with the player on vs the team's average) is
+not stable either: r = 0.049 for players with ≥ 900 minutes in both halves (n = 1,018).
+xG conceded is a product of all eleven players and the opponent; one season is far too little to
+attribute it to pairs. **Not used** in reports; code kept (`edge_builder` def columns,
+`train --target def`, `SynergyEngine` loads `synergy_hgt_def_*` only if present) to re-test with
+multi-season data.
+
 ## Out-of-season test — 2025-2026 model on 2026-2027 pairs (2026-11-16, preliminary)
 
 No training change; a new evaluation. 333 matches of 2026-2027, 8,903 scoreable pairs (67 %).

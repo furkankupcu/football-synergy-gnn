@@ -126,19 +126,61 @@ def _load_events(season: str, league: str | None = None) -> pd.DataFrame:
         return pd.DataFrame(columns=["match_id", "player_id", "goals", "assists", "xg", "xa"])
 
 
+PENALTY_XG = 0.76  # shots without an xG value: penalties get the usual penalty xG
+
+
+def _load_conceded(season: str, league: str | None = None) -> dict:
+    """Shots per (match_id, shooter_is_home) → (minute array, xG array) for the defensive target.
+
+    Minutes are capped at 90 (stoppage time is stored as 45 / 90, like player minutes).
+    Own goals are not chances and are skipped. Missing xG: penalties PENALTY_XG, other shots the
+    season's mean open-play xG.
+    """
+    where_sql, params = _season_where(season, league)
+    extra = "AND" if where_sql else "WHERE"
+    try:  # the shots table is optional — without it there is simply no defensive target
+        shots = db.read_sql(f"""
+            SELECT s.match_id, s.is_home, LEAST(s.time_minute, 90) AS minute, s.xg, s.situation
+            FROM shots s JOIN matches m ON m.match_id = s.match_id
+            {where_sql} {extra} COALESCE(s.goal_type, '') <> 'own'
+        """, params)
+    except Exception as e:
+        print(f"[edges] no shot data, defensive target skipped: {e}")
+        return {}
+    if shots.empty:
+        return {}
+    mean_xg = shots.loc[shots["situation"].ne("penalty"), "xg"].mean()
+    shots["xg"] = shots["xg"].fillna(
+        shots["situation"].eq("penalty").map({True: PENALTY_XG, False: mean_xg}))
+    return {k: (g["minute"].to_numpy(float), g["xg"].to_numpy(float))
+            for k, g in shots.groupby(["match_id", "is_home"])}
+
+
+def _xg_between(shots: tuple | None, lo: float, hi: float) -> float:
+    """xG of the shots in the window (lo, hi] — the minutes a player or pair was on the pitch."""
+    if shots is None:
+        return 0.0
+    minute, xg = shots
+    return float(xg[(minute > lo) & (minute <= hi)].sum())
+
+
 def _overlap(a_on: int, a_off: int, b_on: int, b_off: int) -> int:
     return max(0, min(a_off, b_off) - max(a_on, b_on))
 
 
-def _per_match_pairs(group: pd.DataFrame, kind: str = "teammate") -> pd.DataFrame:
+def _per_match_pairs(group: pd.DataFrame, kind: str = "teammate",
+                     conceded: dict | None = None) -> pd.DataFrame:
     """Produce pairwise overlaps for a single match.
 
-    kind='teammate': pairs within the same team_id
+    kind='teammate': pairs within the same team_id; with `conceded` ({team_id: shots against})
+                     also the xG conceded while both were on the pitch (xga_together) and the
+                     overlap minutes that count for it (def_minutes; 0 without shot data)
     kind='opponent': pairs across team_ids (home × away)
     """
     rows = []
     if kind == "teammate":
-        for _, team_df in group.groupby("team_id"):
+        for team_id, team_df in group.groupby("team_id"):
+            against = (conceded or {}).get(team_id)
             players = team_df[["player_id", "minutes_on", "minutes_off"]].values
             for (pa, on_a, off_a), (pb, on_b, off_b) in combinations(players, 2):
                 if pa == pb:
@@ -147,7 +189,11 @@ def _per_match_pairs(group: pd.DataFrame, kind: str = "teammate") -> pd.DataFram
                 if ov <= 0:
                     continue
                 pid_a, pid_b = sorted([pa, pb])
-                rows.append((pid_a, pid_b, ov, 1))
+                lo, hi = max(on_a, on_b), min(off_a, off_b)
+                rows.append((pid_a, pid_b, ov, 1, _xg_between(against, lo, hi),
+                             ov if against is not None else 0))
+        return pd.DataFrame(rows, columns=["player_a", "player_b", "minutes_together",
+                                           "matches_together", "xga_together", "def_minutes"])
     else:
         teams = list(group.groupby("team_id"))
         if len(teams) != 2:
@@ -191,6 +237,31 @@ def _solo_baseline(lineups: pd.DataFrame, events: pd.DataFrame) -> dict[str, flo
     return dict(zip(agg["player_id"], agg["per90"]))
 
 
+def _team_conceded(g: pd.DataFrame, shots: dict) -> dict:
+    """{team_id: shots against that team} for one match; a match without shot data → {}."""
+    match_id = g["match_id"].iat[0]
+    if (match_id, True) not in shots and (match_id, False) not in shots:
+        return {}
+    empty = (np.array([]), np.array([]))
+    home = g["home_team_id"].iat[0]
+    # shots against a team are the other side's shots
+    return {t: shots.get((match_id, t != home), empty) for t in g["team_id"].unique()}
+
+
+def _solo_defence(lineups: pd.DataFrame, shots: dict) -> dict[str, float]:
+    """xG conceded per 90 while each player was on the pitch (matches with shot data only).
+    Defensive counterpart of `_solo_baseline`."""
+    xga, mins = {}, {}
+    for _, g in lineups.groupby("match_id"):
+        conc = _team_conceded(g, shots)
+        if not conc:
+            continue
+        for pid, team, on, off in g[["player_id", "team_id", "minutes_on", "minutes_off"]].values:
+            xga[pid] = xga.get(pid, 0.0) + _xg_between(conc.get(team), on, off)
+            mins[pid] = mins.get(pid, 0.0) + max(0, off - on)
+    return {p: xga[p] / mins[p] * 90.0 for p in xga if mins[p] > 0}
+
+
 def build_edges(season: str, league: str | None = None) -> dict[str, pd.DataFrame]:
     """Return teammate + opponent edge aggregates for a season."""
     lineups = _load_lineups(season, league)
@@ -201,18 +272,21 @@ def build_edges(season: str, league: str | None = None) -> dict[str, pd.DataFram
     events = _load_events(season, league)
     has_events = not events.empty
     solo = _solo_baseline(lineups, events) if has_events else {}
+    shots = _load_conceded(season, league)
+    solo_def = _solo_defence(lineups, shots) if shots else {}
 
     teammate_rows: list[pd.DataFrame] = []
     opponent_rows: list[pd.DataFrame] = []
 
     for match_id, g in lineups.groupby("match_id"):
-        teammate_rows.append(_per_match_pairs(g, kind="teammate").assign(match_id=match_id))
+        conc = _team_conceded(g, shots) if shots else {}
+        teammate_rows.append(_per_match_pairs(g, kind="teammate", conceded=conc).assign(match_id=match_id))
         opponent_rows.append(_per_match_pairs(g, kind="opponent").assign(match_id=match_id))
 
     teammate = pd.concat(teammate_rows, ignore_index=True) if teammate_rows else pd.DataFrame()
     opponent = pd.concat(opponent_rows, ignore_index=True) if opponent_rows else pd.DataFrame()
 
-    teammate = _aggregate(teammate, events if has_events else None, solo)
+    teammate = _aggregate(teammate, events if has_events else None, solo, solo_def)
     opponent = _aggregate(opponent, None, {})
 
     # Min filtre
@@ -235,7 +309,8 @@ def build_edges(season: str, league: str | None = None) -> dict[str, pd.DataFram
 
 
 def _aggregate(pair_df: pd.DataFrame, events: pd.DataFrame | None,
-               solo: dict[str, float] | None = None) -> pd.DataFrame:
+               solo: dict[str, float] | None = None,
+               solo_def: dict[str, float] | None = None) -> pd.DataFrame:
     if pair_df.empty:
         return pd.DataFrame(columns=[
             "player_a", "player_b", "minutes_together", "matches_together",
@@ -243,9 +318,11 @@ def _aggregate(pair_df: pd.DataFrame, events: pd.DataFrame | None,
             "per90_joint_output", "expected_per90", "per90_uplift",
         ])
 
+    extra = {c: (c, "sum") for c in ("xga_together", "def_minutes") if c in pair_df.columns}
     agg = pair_df.groupby(["player_a", "player_b"], as_index=False).agg(
         minutes_together=("minutes_together", "sum"),
         matches_together=("matches_together", "sum"),
+        **extra,
     )
 
     # Joint output — if event data exists, sum (goals + assists) of both players
@@ -301,6 +378,15 @@ def _aggregate(pair_df: pd.DataFrame, events: pd.DataFrame | None,
     else:
         agg["expected_per90"] = 0.0
         agg["per90_uplift"] = 0.0
+
+    # Defensive uplift = expected xG conceded per 90 (mean of the two players' on-pitch rate;
+    # conceding is a team quantity, so the mean, not the sum) − xG conceded per 90 together.
+    # Positive = the team concedes less with both on the pitch. NaN below 90 minutes with shot data.
+    if solo_def and "def_minutes" in agg.columns:
+        dm = agg["def_minutes"]
+        agg["xga90_together"] = (agg["xga_together"] / dm * 90.0).where(dm > 0)
+        agg["expected_xga90"] = (agg["player_a"].map(solo_def) + agg["player_b"].map(solo_def)) / 2
+        agg["def_uplift"] = (agg["expected_xga90"] - agg["xga90_together"]).where(dm >= MIN_MINUTES_TOGETHER)
 
     return agg
 

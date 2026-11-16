@@ -273,6 +273,19 @@ Options: `--target uplift|joint` (build), `--split player-disjoint|random`,
 
 ## 9. Changelog
 
+### 2026-11-16 — defensive synergy target (negative result) and club report
+
+- `edge_builder` also produces `def_uplift`: expected xG conceded per 90 (mean of both players'
+  on-pitch rate) minus xG conceded per 90 while the pair shares the pitch, from shot timing.
+  A separate model (`train --target def`) reaches test ρ 0.03 on three seeds, and the label
+  itself is not stable within a season (split-half r ≈ 0.02 for pairs, 0.05 for players vs
+  0.2 for the attacking label). Not used; kept for a multi-season re-test (experiment log,
+  round 5). The engine loads `synergy_hgt_def_<season>.pt` only if it exists.
+- `src/graph/club_report.py`: per-club report — weak links (attacking synergy × league-relative
+  performance), transfer candidates, most-used vs highest-synergy XI (`--formation`,
+  `--min-minutes`). `src/graph/xi.py` holds the XI logic, `src/graph/pitch_map.py` the figure.
+  Example: Paris Saint-Germain 2025/26 in the README.
+
 ### 2026-11-16 — phase 1.10: missing point counts in position data
 
 - The collector wrote the per-match point count of `player_avg_positions` under a column name
