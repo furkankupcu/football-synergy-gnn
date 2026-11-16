@@ -1,52 +1,40 @@
-# SynergyHGT — Deney Günlüğü (uplift ρ iyileştirme)
+# SynergyHGT — Experiment log (uplift ρ)
 
-**Kural:** Aynı anda **tek değişken** değiştir. Her satırda neyin değiştiği + sonuç + karar.
+**Rule:** change **one variable at a time**. Each row records what changed, the result and the decision.
 
-Sabit ayar: season=2025-2026, split=player-disjoint, target=per90_uplift,
-2× HGTConv (h=128, out=64, 4 head), AdamW lr=1e-3, MSE loss, model seçimi=val_mse min.
-Metrik: test Spearman ρ (inductive) + cold-start ρ (çiftin iki ucu da eğitimde yok).
+Fixed setup: season 2025-2026, player-disjoint split, target `per90_uplift`,
+2× HGTConv (hidden 128, out 64, 4 heads), AdamW lr 1e-3, model selection = min val_mse.
+Metrics: test Spearman ρ (inductive) and cold-start ρ (both players of the pair unseen in training).
 
-| # | Değişen tek şey | test ρ | cold ρ | test MSE | Karar |
-|---|---|---|---|---|---|
-| 0 | **baseline** (rank=0, weighted=off, sel=val_mse) | 0.285 | 0.237 | 0.211 | referans |
-| X | model seçimi val_mse → **val_rho** | 0.156 | 0.176 | 0.234 | ❌ ZARARLI (val_rho overfit) → geri alındı |
-| 1 | ranking loss λ=0.5 | 0.311 | 0.284 | 0.210 | ✅ iyi |
-| 2 | ranking loss λ=1.0 | **0.331** | 0.299 | 0.211 | ✅ **EN İYİ test ρ** → seçildi |
-| 3 | ranking loss λ=2.0 | 0.320 | 0.309 | 0.214 | ✅ (cold en iyi, test biraz düşük) |
-| 4 | ranking loss λ=3.0 | 0.317 | 0.292 | 0.220 | ↘ aşırı → MSE bozuluyor |
-| 5 | λ=1.0 ÜZERİNE + **weighted** (sqrt-dakika) | **0.334** | **0.315** | 0.211 | ✅ **FİNAL** (cold +0.016) |
+## Round 1 — graph with 3,495 players (before the missing-team data fix)
 
-| 6 | **team NULL onarımı** (veri hatası, model değişmedi) | **0.368** | **0.389** | **0.169** | ✅ **EN İYİ** — graf 3495→4962 node |
+| # | Single change | test ρ | cold ρ | test MSE | Decision |
+|---|---|---:|---:|---:|---|
+| 0 | **baseline** (rank=0, unweighted, select on val_mse) | 0.285 | 0.237 | 0.211 | reference |
+| X | model selection val_mse → **val_rho** | 0.156 | 0.176 | 0.234 | ❌ harmful (val_rho overfits) → reverted |
+| 1 | ranking loss λ=0.5 | 0.311 | 0.284 | 0.210 | ✅ |
+| 2 | ranking loss λ=1.0 | **0.331** | 0.299 | 0.211 | ✅ best test ρ → kept |
+| 3 | ranking loss λ=2.0 | 0.320 | 0.309 | 0.214 | best cold-start, lower test ρ |
+| 4 | ranking loss λ=3.0 | 0.317 | 0.292 | 0.220 | ↘ too strong, MSE degrades |
+| 5 | λ=1.0 **+ minutes-weighted MSE** | **0.334** | **0.315** | 0.211 | ✅ final for round 1 |
+| 6 | **data fix: missing team ids** (model unchanged) | **0.368** | **0.389** | **0.169** | ✅ graph grew 3,495 → 4,962 players |
 
-## Final konfigürasyon
-`--rank-weight 1.0 --weighted` → **test ρ 0.334, cold-start ρ 0.315** (baseline 0.285/0.237'den
-+0.049 / +0.078). Kayıtlı: `data/graph/models/synergy_hgt_2025-2026.pt`.
+What worked / what did not:
+- ✅ **Ranking loss** (Spearman surrogate) — the largest gain: it optimises the ordering directly.
+- ✅ **Minutes-weighted MSE** (√minutes together) — small but consistent, mostly on cold-start.
+- ⚠️ **λ > 2** — buys test ρ by hurting MSE.
+- ❌ **Selecting the checkpoint on val ρ** — overfits badly (0.285 → 0.156). Spearman on the
+  validation set is noisy (edges share players); the val_mse minimum generalises better.
 
-### Neyin işe yaradığı / yaramadığı (özet)
-- ✅ **Ranking loss (λ=1.0)** — en büyük kazanç (sıralamayı doğrudan optimize ediyor).
-- ✅ **minutes-weighted MSE** — küçük ama tutarlı, özellikle cold-start'ta.
-- ⚠️ **λ>2** — fazla ranking ağırlığı MSE'yi bozuyor, test ρ düşüyor.
-- ❌ **val_rho ile model seçimi** — overfit, ciddi zarar (0.285→0.156). val_mse kullan.
-- 📌 Sıradaki denenebilir (henüz yapılmadı, hepsi tek-değişken): weight_decay sweep,
-  hidden/out boyutu, num_layers=1 vs 3, target=xG+xA-uplift (gürültü azaltma).
+## Round 2 — repeated on the repaired graph (4,962 players), 2026-09-13
 
-## Notlar
-- **val_rho ile model seçimi overfit ediyor**: val setinde Spearman gürültülü (paylaşılan
-  oyuncular üzerinden korele); zirve epoch test'e genellemiyor. val_mse minimumu daha iyi.
-- **Ranking loss (Spearman surrogate)** doğrudan sıralamayı optimize ettiği için ρ'yu
-  yükseltiyor, MSE'yi bozmadan. Asıl kazanç burada.
-- Sweep'ler aşağıda güncellenecek.
+All earlier sweeps ran on the broken graph, so the λ decision was re-tested. Single seed (42), deterministic.
 
-## 2026-09-13 — Onarılmış graf (4962 node) üzerinde ablasyon tekrarı
-
-Önceki tüm sweep'ler 3495 node'luk **bozuk** graf üzerindeydi (team NULL hatası,
-CLAUDE.md §4b). Graf %42 büyüyünce λ kararı değişti. Tek seed (42), deterministik.
-
-| Konfig | val_mse | test ρ | test MSE | cold-start ρ | cold MSE |
+| Config | val_mse | test ρ | test MSE | cold-start ρ | cold MSE |
 |---|---:|---:|---:|---:|---:|
 | rank=1.0 + weighted | 0.1668 | 0.3677 | 0.1689 | 0.3891 | 0.1732 |
 | baseline (rank=0, unweighted) | 0.1672 | 0.3563 | 0.1682 | 0.3878 | 0.1746 |
-| rank=0.5 + weighted ✅ | 0.1674 | 0.3705 | 0.1671 | 0.4097 | 0.1704 |
+| **rank=0.5 + weighted ✅** | 0.1674 | 0.3705 | 0.1671 | 0.4097 | 0.1704 |
 | rank=0 + weighted | 0.1678 | 0.3568 | 0.1684 | 0.4021 | 0.1750 |
 | rank=2.0 + weighted | 0.1687 | 0.3790 | 0.1704 | 0.3958 | 0.1734 |
 | rank=1.0 unweighted | 0.1688 | 0.3738 | 0.1695 | 0.3977 | 0.1719 |
@@ -55,12 +43,19 @@ CLAUDE.md §4b). Graf %42 büyüyünce λ kararı değişti. Tek seed (42), dete
 | rank=3.0 unweighted | 0.1762 | 0.3793 | 0.1778 | 0.3939 | 0.1766 |
 | rank=5.0 + weighted | 0.1792 | 0.3875 | 0.1809 | 0.4013 | 0.1813 |
 
-**Seçim: λ=0.5 + weighted.** Cold-start ρ (0.4097), cold-start MSE (0.1704) ve
-test MSE (0.1671) üçünde de en iyi. val_mse'de birinci değil ama fark 0.0006 —
-gürültü seviyesinde. Cold-start scouting'in doğrudan karşılığı olduğu için belirleyici.
+**Choice: λ=0.5 + weighted.** Best on cold-start ρ, cold-start MSE and test MSE. It is not first
+on val_mse, but the gap (0.0006) is at noise level. Cold-start is what scouting a new signing
+actually looks like, so it decides.
 
-**λ tepe noktası:** test ρ λ=4'te doyuyor (0.3880), λ=5'te düşüyor (0.3875). Yüksek λ
-test ρ'yu MSE'yi bozarak satın alıyor (0.1684 → 0.1809) ve cold-start'a katkı vermiyor.
+**λ saturates:** test ρ peaks at λ=4 (0.3880) and drops at λ=5. Higher λ buys test ρ by
+degrading MSE (0.1684 → 0.1809) and does not help cold-start.
 
-**weighted'ın etkisi:** λ=0'da test ρ'yu değiştirmiyor (0.3563 → 0.3568) ama cold-start
-ρ'yu belirgin yükseltiyor (0.3878 → 0.4021). Katkısı cold-start'a özgü.
+**Effect of weighting:** at λ=0 it leaves test ρ unchanged (0.3563 → 0.3568) but clearly lifts
+cold-start ρ (0.3878 → 0.4021).
+
+Configurations were **not** chosen on test ρ: picking the best of ten on the test set would
+turn it into a validation set.
+
+## Next single-variable experiments (not run yet)
+
+weight-decay sweep · hidden/output size · 1 vs 3 HGT layers · xG+xA-based uplift (less noisy than goals+assists).

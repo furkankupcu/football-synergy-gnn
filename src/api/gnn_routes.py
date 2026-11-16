@@ -50,6 +50,14 @@ def _resolve_season(season: Optional[str]) -> str:
     return season
 
 
+def _season_join(season: str, alias: str = "t") -> tuple[str, dict]:
+    """`JOIN matches ... WHERE <sezon>` — model sezonu dışındaki maçlar karışmasın
+    (yeni sezon verisi geldikçe dakika/konum toplamları aksi halde iki sezonu toplar)."""
+    from src.graph.edge_builder import _season_where
+    where_sql, params = _season_where(season)
+    return f"JOIN matches m ON m.match_id = {alias}.match_id {where_sql}", params
+
+
 def _pid(player_id: int | str) -> str:
     s = str(player_id)
     return s if s.startswith("ss_") else f"ss_{s}"
@@ -145,13 +153,14 @@ def squad_recommend(payload: dict = Body(...)):
     eligible_pids: set[str] | None = None
     if min_minutes > 0:
         try:
+            join_sql, params = _season_join(season)
             mins_df = db.read_sql(f"""
-                SELECT 'ss_' || source_player_id::text AS pid,
-                       COALESCE(SUM(minutes_played), 0) AS mins
-                FROM player_stats
-                GROUP BY source_player_id
-                HAVING COALESCE(SUM(minutes_played), 0) >= {min_minutes}
-            """)
+                SELECT 'ss_' || t.source_player_id::text AS pid,
+                       COALESCE(SUM(t.minutes_played), 0) AS mins
+                FROM player_stats t {join_sql}
+                GROUP BY t.source_player_id
+                HAVING COALESCE(SUM(t.minutes_played), 0) >= :min_minutes
+            """, {**params, "min_minutes": min_minutes})
             eligible_pids = set(mins_df["pid"].tolist())
         except Exception as e:
             print(f"[squad-recommend] min_minutes filter failed: {e}")
@@ -218,12 +227,13 @@ def pair_scores(payload: dict = Body(...)):
 def player_raw_positions(player_id: int, season: Optional[str] = None):
     """Maç başına ham avg-position noktaları (per-player heatmap için)."""
     season = _resolve_season(season)
+    join_sql, params = _season_join(season)
     raw = db.read_sql(f"""
-        SELECT match_id, avg_x AS x, avg_y AS y, points_count AS points
-        FROM player_avg_positions
-        WHERE source_player_id = {int(player_id)}
-          AND avg_x IS NOT NULL AND avg_y IS NOT NULL
-    """)
+        SELECT t.match_id, t.avg_x AS x, t.avg_y AS y, COALESCE(t.points_count, 0) AS points
+        FROM player_avg_positions t {join_sql}
+          AND t.source_player_id = :pid
+          AND t.avg_x IS NOT NULL AND t.avg_y IS NOT NULL
+    """, {**params, "pid": int(player_id)})
     return {
         "season": season,
         "player_id": f"ss_{player_id}",
@@ -244,19 +254,20 @@ def team_map(team_name: str, season: Optional[str] = None):
            if t == team_name and pid.startswith("ss_") and pid[3:].isdigit()]
     if not ids:
         raise HTTPException(404, f"Takım yok veya boş: {team_name}")
-    ids_csv = ",".join(ids)
+    ids_csv = ",".join(ids)  # yalnız rakam (yukarıda isdigit) → enjeksiyon yok
+    join_sql, params = _season_join(season)
     raw = db.read_sql(f"""
-        SELECT 'ss_' || source_player_id::text AS player_id,
-               MAX(player_name)                    AS name,
-               SUM(avg_x * points_count) / NULLIF(SUM(points_count), 0) AS x,
-               SUM(avg_y * points_count) / NULLIF(SUM(points_count), 0) AS y,
-               SUM(points_count)                   AS points_count
-        FROM player_avg_positions
-        WHERE source_player_id IN ({ids_csv})
-        GROUP BY source_player_id
-        HAVING SUM(points_count) > 30
+        SELECT 'ss_' || t.source_player_id::text AS player_id,
+               MAX(t.player_name)                    AS name,
+               SUM(t.avg_x * t.points_count) / NULLIF(SUM(t.points_count), 0) AS x,
+               SUM(t.avg_y * t.points_count) / NULLIF(SUM(t.points_count), 0) AS y,
+               SUM(t.points_count)                   AS points_count
+        FROM player_avg_positions t {join_sql}
+          AND t.source_player_id IN ({ids_csv})
+        GROUP BY t.source_player_id
+        HAVING SUM(t.points_count) > 30
         ORDER BY points_count DESC
-    """)
+    """, params)
     out = []
     for r in raw.itertuples():
         idx = eng.pid_to_idx.get(r.player_id)
@@ -272,17 +283,18 @@ def team_map(team_name: str, season: Optional[str] = None):
 def player_avg_position(player_id: int, season: Optional[str] = None):
     """Tek oyuncunun ağırlıklı X/Y ortalaması (modal mini saha için)."""
     season = _resolve_season(season)
+    join_sql, params = _season_join(season)
     raw = db.read_sql(f"""
-        SELECT 'ss_' || source_player_id::text AS player_id,
-               MAX(player_name) AS name,
-               SUM(avg_x * points_count) / NULLIF(SUM(points_count), 0) AS x,
-               SUM(avg_y * points_count) / NULLIF(SUM(points_count), 0) AS y,
-               SUM(points_count) AS points_count,
+        SELECT 'ss_' || t.source_player_id::text AS player_id,
+               MAX(t.player_name) AS name,
+               SUM(t.avg_x * t.points_count) / NULLIF(SUM(t.points_count), 0) AS x,
+               SUM(t.avg_y * t.points_count) / NULLIF(SUM(t.points_count), 0) AS y,
+               SUM(t.points_count) AS points_count,
                COUNT(*)          AS matches
-        FROM player_avg_positions
-        WHERE source_player_id = {int(player_id)}
-        GROUP BY source_player_id
-    """)
+        FROM player_avg_positions t {join_sql}
+          AND t.source_player_id = :pid
+        GROUP BY t.source_player_id
+    """, {**params, "pid": int(player_id)})
     if raw.empty:
         return {"season": season, "player_id": f"ss_{player_id}", "x": None, "y": None, "points": 0, "matches": 0}
     r = raw.iloc[0]
@@ -314,14 +326,15 @@ def team_roster(team_name: str, season: Optional[str] = None):
                    if pid.startswith("ss_") and pid[3:].isdigit()]
     minutes_map: dict[str, int] = {}
     if numeric_ids:
-        ids_csv = ",".join(numeric_ids)
+        ids_csv = ",".join(numeric_ids)  # yalnız rakam → enjeksiyon yok
+        join_sql, params = _season_join(season)
         m_df = db.read_sql(f"""
-            SELECT 'ss_' || source_player_id::text AS player_id,
-                   SUM(COALESCE(minutes_played, 0))::int AS minutes
-            FROM player_stats
-            WHERE source_player_id IN ({ids_csv})
-            GROUP BY source_player_id
-        """)
+            SELECT 'ss_' || t.source_player_id::text AS player_id,
+                   SUM(COALESCE(t.minutes_played, 0))::int AS minutes
+            FROM player_stats t {join_sql}
+              AND t.source_player_id IN ({ids_csv})
+            GROUP BY t.source_player_id
+        """, params)
         minutes_map = {r.player_id: int(r.minutes) for r in m_df.itertuples()}
 
     players = []

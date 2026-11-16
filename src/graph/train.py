@@ -1,7 +1,8 @@
 """SynergyHGT eğitimi.
 
-Edge split: train/val/test = 70/15/15 — teammate kenarlarından rastgele.
-Loss: MSE + opsiyonel pairwise ranking. Metrik: MSE, Spearman, P@K.
+Split: player-disjoint 70/15/15 (default) or random edge split.
+Loss: MSE (optionally minutes-weighted) + optional pairwise ranking loss.
+Metrics: MSE, Spearman ρ, cold-start ρ.
 """
 
 from __future__ import annotations

@@ -158,11 +158,17 @@ def coordinate_to_position(avg_x: float | None, avg_y: float | None,
     x, y = float(avg_x), float(avg_y)
     Y_R, Y_L = Y_EDGES  # 36 sağ, 65 sol
     CB_DEPTH_THRESHOLD = 38.0  # bu X derinliğin altı kesin stoper
+    # Yüksek hat oynayan takımların stoperleri X≈38-42'de, Y≈30-35/65-70'te kalır
+    # (Saliba, Guéhi, Schlotterbeck); X<38 kuralı onları bek yapıyordu. Gerçek bekler
+    # bu derinlikte Y<28 / Y>72'ye açılır. 25/26'da 77 defans oyuncusu düzeldi (2026-11-16).
+    CB_HIGH_LINE_X, CB_HIGH_LINE_Y = 43.0, (28.0, 72.0)
 
     # Defans (D)
     if base_code == "D":
         # Derin oynuyorsa kesinlikle stoper (LB/RB değil)
-        if x < CB_DEPTH_THRESHOLD:
+        if x < CB_DEPTH_THRESHOLD or (
+            x < CB_HIGH_LINE_X and CB_HIGH_LINE_Y[0] <= y <= CB_HIGH_LINE_Y[1]
+        ):
             return "RCB" if y < 50 else "LCB"
         # Daha ileri X — bek/stoper kararı için Y'ye bak
         if y < Y_R:

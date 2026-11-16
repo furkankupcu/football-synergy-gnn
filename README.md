@@ -1,105 +1,120 @@
 # Football Synergy GNN
 
-Hangi oyuncular **birlikte** sahadayken bireysel kalitelerinin toplamından daha fazlasını üretiyor?
+**Which players produce more together than the sum of their individual quality?**
 
-Bu proje, maç bazlı oyuncu verisinden heterojen bir oyuncu grafı kurar ve **SynergyHGT** adlı bir
-Graph Neural Network ile oyuncu çiftlerinin sinerjisini tahmin eder. Öğrenilen oyuncu
-embedding'leri üç işte kullanılır:
+This project builds a heterogeneous player graph from match-level data across nine European
+leagues and trains **SynergyHGT**, a graph neural network that predicts how well two players
+combine. The learned player embeddings power three scouting tasks:
 
-- **Sinerji skoru**: iki oyuncu birlikte oynadığında beklenenin ne kadar üstüne çıkıyor
-- **Kadro tamamlama**: mevcut 10 oyuncuya en iyi uyan 11. oyuncu (pozisyon kısıtlı)
-- **Benzer oyuncu**: transfer scouting için embedding uzayında en yakın oyuncular
+- **Pair synergy** — how far above expectation two players perform when they share the pitch
+- **Squad completion** — the best candidates for an empty slot given the other ten players
+- **Similar players** — nearest neighbours in embedding space for recruitment shortlists
 
-![Pipeline](docs/pipeline.png)
+<p align="center">
+  <img src="docs/hero_synergy.png" width="560"
+       alt="Arsenal 2025/26 most-used XI on a pitch at their average positions, with the 12 strongest predicted synergy pairs drawn as coloured lines">
+</p>
 
-## Neden "uplift"?
+## Why "uplift"?
 
-Ham ortak çıktıyı (iki oyuncunun birlikteyken ürettiği G+A vb.) hedef almak, modeli yıldız
-oyuncuları ezberlemeye iter: iyi iki oyuncu birlikte de iyidir, bu sinerji değildir.
-Bu yüzden hedef saf sinerjidir:
+Training on raw joint output (goals + assists two players produce together) teaches a model
+to recognise stars: two good players are productive together, but that is not synergy.
+The target here is the part that is left over:
 
 ```
-per90_uplift = gözlenen_çift_per90 − (solo_a_per90 + solo_b_per90)
+per90_uplift = observed pair output per 90 − (solo output per 90 of a + of b)
 ```
 
-Değerlendirme de bilerek zorlaştırıldı: **player-disjoint split** kullanılıyor, yani test
-oyuncuları eğitimde ve mesaj geçişinde hiç görülmüyor (inductive). Kolay kurulumla (ham hedef +
-random split) ρ≈0.79 elde ediliyordu; bu sayı leakage ve yıldız etkisiyle şişkindi.
+Evaluation is deliberately strict. The split is **player-disjoint**: test players' teammate
+edges and labels are never used in training, so a test pair always involves at least one
+player the model has only seen through their features and unlabelled opponent context. The easy
+setup (raw target + random edge split) scored ρ ≈ 0.79; that number was inflated by leakage
+and star effects and is not comparable.
+
+## Results
+
+Season 2025/26 · 9 leagues · 4,962 players · 43.3k teammate and 151k opponent edges.
+
+![Current metrics](docs/current_metrics.png)
+
+| Metric | Value | What it measures |
+|---|---:|---|
+| Test Spearman ρ | **0.371** | ranking of pairs with at least one unseen player |
+| Cold-start ρ | **0.409** | pairs where **both** players are unseen (a new signing next to a new signing) |
+| Test MSE | **0.167** | error in per-90 uplift units |
+
+![Predicted vs actual](docs/pred_vs_actual.png)
+
+Every change was tested one variable at a time — see [`docs/EXPERIMENT_LOG.md`](docs/EXPERIMENT_LOG.md).
+The full technical write-up is in [`MODEL.md`](MODEL.md).
+
+![Development history](docs/model_metrics.png)
 
 ## Model
 
-![Mimari](docs/model_architecture.png)
+![Architecture](docs/model_architecture.png)
 
-| Bileşen | Detay |
+| Component | Detail |
 |---|---|
-| Graf | Düğüm: oyuncu. Kenar: `teammate` (etiketli) + `opponent` (yalnız bağlam) |
-| Düğüm özniteliği | 47-dim: per-90 istatistik z-skorları, yaş/boy, ayak, 11 detaylı pozisyon one-hot |
-| Ek embedding | Öğrenilebilir takım (8-dim) + lig (4-dim) |
-| Enkoder | 2× HGTConv, 4 head, hidden 128 → 64-dim oyuncu embedding |
-| Kenar regresörü | MLP: `[e_a, e_b, \|e_a − e_b\|, e_a ⊙ e_b]` |
-| Kayıp | Dakika-ağırlıklı MSE + 0.5 × sıralama kaybı (Spearman surrogate) |
-| Model seçimi | `val_mse` (val ρ ile seçim overfit ediyor) |
+| Graph | Node: player. Edges: `teammate` (labelled) + `opponent` (context only) |
+| Node features | 47-dim: 29 per-90 stats + age + height (z-scored), preferred foot (3), position one-hot (13) |
+| Extra embeddings | Learned team (8-dim) + league (4-dim) |
+| Encoder | 2× HGTConv, 4 heads, hidden 128 → 64-dim player embedding |
+| Edge regressor | MLP on `[e_a, e_b, \|e_a − e_b\|, e_a ⊙ e_b]` |
+| Loss | Minutes-weighted MSE + 0.5 × pairwise ranking loss (Spearman surrogate) |
+| Checkpoint selection | Minimum validation MSE (selecting on validation ρ overfits) |
 
-### Pozisyon türetimi
+### Positions
 
-Ham veride yalnızca G/D/M/F var. Bu kod ana sınıfı belirler; maç başı ortalama X/Y koordinatı
-**sadece** alt pozisyon ayrımında kullanılır (RB/LB/RCB/LCB, CDM/CM/CAM, RW/LW/ST). Böylece
-derinde oynayan bir orta saha koordinatı yüzünden stopere düşmez.
-Bkz. [`src/graph/positions.py`](src/graph/positions.py).
+The raw data only has a coarse G/D/M/F code. That code decides the class; the player's
+season-average X/Y position is used **only** to split it further (RB/RCB/LCB/LB, CDM/CM/CAM,
+RW/ST/LW). A deep-lying midfielder therefore stays a midfielder instead of being labelled a
+centre-back, and centre-backs in high defensive lines are not mistaken for full-backs.
+See [`src/graph/positions.py`](src/graph/positions.py) and its tests.
 
-## Sonuçlar
-
-25/26 sezonu, 9 Avrupa ligi: 4.962 oyuncu, 43,3k teammate ve 151k opponent kenarı.
-
-| Metrik | Değer |
-|---|---:|
-| Test Spearman ρ | **0.371** |
-| Cold-start ρ (hiç görülmemiş oyuncu çiftleri) | **0.410** |
-| Test MSE | **0.167** |
-
-![Metrikler](docs/current_metrics.png)
-
-Tek değişkenli ablasyonların tamamı [`docs/EXPERIMENT_LOG.md`](docs/EXPERIMENT_LOG.md) içinde,
-teknik rapor [`MODEL.md`](MODEL.md) içinde.
-
-## Repo yapısı
+## Repository layout
 
 ```
-src/graph/      edge_builder → build → train, model, öneri motoru, benzerlik
-src/api/        FastAPI; GNN uç noktaları /gnn/* altında + statik HTML arayüz
-src/analysis/   rol profilleri, pozisyon çözümleme, transfer analizi
-src/tactical/   stil uyumu, oyuncu değişikliği sıralaması
-data/db/        PostgreSQL şeması
-docs/           figürler ve deney günlüğü
-app.py          Streamlit geliştirme arayüzü
+src/graph/      edge_builder → build → train, model, squad recommender, similarity
+src/api/        FastAPI app; GNN endpoints under /gnn/* plus a static HTML front end
+src/analysis/   role profiles, position resolution, transfer analysis
+src/tactical/   style fit, replacement ranking
+data/db/        PostgreSQL schema
+docs/           figures, figure scripts and the experiment log
+tests/          unit tests
+app.py          Streamlit development UI
 ```
 
-## Çalıştırma
+## Running it
 
-> **Veri bu repoda yok.** Ne ham maç verisi ne de eğitilmiş model ağırlıkları dağıtılıyor.
-> Kod, aşağıdaki tabloları içeren bir PostgreSQL veritabanı bekler.
+> **No data is included.** Neither match data nor trained weights are distributed.
+> The code expects a PostgreSQL database with the tables below.
 
-| Tablo | İçerik |
+| Table | Content |
 |---|---|
-| `matches` | Maç metadata (lig, sezon, tarih, takımlar) |
-| `player_stats` | Maç başı oyuncu istatistikleri (dakika, pozisyon kodu, rating, şut, pas…) |
-| `player_avg_positions` | Maç başı oyuncu ortalama konumu: `match_id`, `source_player_id`, `avg_x`, `avg_y`, `points_count` (0–100 ölçek) |
+| `matches` | match metadata (league, season, date, teams) |
+| `player_stats` | per-match player statistics (minutes, position code, passes, shots, …) |
+| `player_avg_positions` | per-match average position: `match_id`, `source_player_id`, `avg_x`, `avg_y`, `points_count` (0–100 scale) |
 
-İlk iki tablonun tam şeması: [`data/db/schema.sql`](data/db/schema.sql).
+Full schema for the first two: [`data/db/schema.sql`](data/db/schema.sql).
 
 ```bash
-pip install -r requirements.txt   # torch / torch-geometric için dosyadaki nota bakın
+pip install -r requirements.txt   # see the note in the file for torch / torch-geometric wheels
 ```
 
-Bağlantı ortam değişkenlerinden okunur: `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASSWORD`.
+The connection is read from `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER` and `DB_PASSWORD`.
 
 ```bash
 python -m src.graph.edge_builder --season 2025-2026
 python -m src.graph.build --season 2025-2026
 python -m src.graph.train --season 2025-2026 --rank-weight 0.5 --weighted
 uvicorn src.api.main:app --reload
+
+python -m docs.gen_model_figs     # refresh figures
+python -m docs.gen_hero           # hero image (team and season as arguments)
+python -m pytest tests
 ```
 
-## Lisans
+## License
 
-Kod [MIT](LICENSE) lisanslıdır. Veri dahil değildir.
+The code is [MIT](LICENSE) licensed. No data is included.
