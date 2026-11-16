@@ -75,17 +75,31 @@ epoch 44): extreme per-90 values of players with a few minutes make training fra
 shrinkage the three seeds agree within 0.006. **Kept.** Every single-seed result above this
 section was produced by the fragile setup; their rankings should be re-checked with 3 seeds.
 
+## Round 4 — position data fix (2026-11-16)
+
+Data change only: 577 players had lost their coordinate-based position (missing point counts).
+Same three seeds as round 3.
+
+| Config | seed | test ρ | cold ρ | test MSE | val MSE |
+|---|---:|---:|---:|---:|---:|
+| **position fix** | 42 | 0.351 | 0.378 | 0.171 | 0.165 |
+| position fix | 1 | 0.357 | 0.386 | 0.171 | 0.167 |
+| position fix | 2 | 0.362 | 0.396 | 0.170 | 0.165 |
+
+Means 0.357 / 0.387 / 0.171 vs 0.358 / 0.390 / 0.170 before: unchanged within seed noise.
+**Kept** for correct labels (they drive squad completion and the per-position comparisons).
+
 ## Out-of-season test — 2025-2026 model on 2026-2027 pairs (2026-11-16, preliminary)
 
 No training change; a new evaluation. 333 matches of 2026-2027, 8,903 scoreable pairs (67 %).
 
 | Pairs (≥ 90 min) | n | SynergyHGT ρ | player-mean ρ | persistence ρ |
 |---|---:|---:|---:|---:|
-| new | 3,283 | 0.323 | 0.230 | – |
-| repeat | 5,620 | 0.364 | 0.274 | 0.198 |
+| new | 3,283 | 0.316 | 0.230 | – |
+| repeat | 5,620 | 0.357 | 0.274 | 0.198 |
 
-(phase 1.9 model; the 1.8 model gave 0.318 / 0.374.) Advantage over the player-mean baseline
-on new pairs: bootstrap 95 % [+0.068, +0.123].
+(phase 1.10 model; 1.9 gave 0.323 / 0.364, 1.8 gave 0.318 / 0.374.) Advantage over the
+player-mean baseline on new pairs: bootstrap 95 % [+0.061, +0.116].
 Re-run with `python -m src.graph.evaluate_temporal` as more 2026-2027 matches come in.
 
 ## Next single-variable experiments (not run yet)

@@ -393,14 +393,14 @@ def page_team_map(eng: SynergyEngine):
     raw = db.read_sql(f"""
         SELECT
             'ss_' || source_player_id::text AS player_id,
-            SUM(avg_x * points_count) / NULLIF(SUM(points_count),0) AS x,
-            SUM(avg_y * points_count) / NULLIF(SUM(points_count),0) AS y,
+            SUM(avg_x * COALESCE(points_count, 1)) / NULLIF(SUM(COALESCE(points_count, 1)), 0) AS x,
+            SUM(avg_y * COALESCE(points_count, 1)) / NULLIF(SUM(COALESCE(points_count, 1)), 0) AS y,
             SUM(points_count) AS pts,
             MAX(player_name) AS name
         FROM player_avg_positions
         WHERE source_player_id IN ({ids_csv})
         GROUP BY source_player_id
-        HAVING SUM(points_count) > 30
+        HAVING COUNT(avg_x) > 0  -- points_count may be NULL (2026/27)
         ORDER BY pts DESC
     """)
     if raw.empty:

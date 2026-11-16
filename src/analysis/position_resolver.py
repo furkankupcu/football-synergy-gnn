@@ -46,14 +46,14 @@ def get_position_map(season: Optional[str] = None) -> dict[int, str]:
     sql_avg = f"""
         SELECT a.source_player_id                                  AS pid,
                MAX(a.position_code)                                    AS base_code,
-               SUM(a.avg_x * a.points_count) / NULLIF(SUM(a.points_count), 0) AS x,
-               SUM(a.avg_y * a.points_count) / NULLIF(SUM(a.points_count), 0) AS y,
+               SUM(a.avg_x * COALESCE(a.points_count, 1)) / NULLIF(SUM(COALESCE(a.points_count, 1)), 0) AS x,
+               SUM(a.avg_y * COALESCE(a.points_count, 1)) / NULLIF(SUM(COALESCE(a.points_count, 1)), 0) AS y,
                SUM(a.points_count)                                     AS total_pts
         FROM player_avg_positions a
         JOIN matches m ON m.match_id = a.match_id
         {where}
         GROUP BY a.source_player_id
-        HAVING SUM(a.points_count) > 30
+        HAVING COUNT(a.avg_x) > 0  -- points_count may be NULL (2026/27)
     """
     df_avg = db.read_sql(sql_avg, params)
 

@@ -259,14 +259,14 @@ def team_map(team_name: str, season: Optional[str] = None):
     raw = db.read_sql(f"""
         SELECT 'ss_' || t.source_player_id::text AS player_id,
                MAX(t.player_name)                    AS name,
-               SUM(t.avg_x * t.points_count) / NULLIF(SUM(t.points_count), 0) AS x,
-               SUM(t.avg_y * t.points_count) / NULLIF(SUM(t.points_count), 0) AS y,
-               SUM(t.points_count)                   AS points_count
+               SUM(t.avg_x * COALESCE(t.points_count, 1)) / NULLIF(SUM(COALESCE(t.points_count, 1)), 0) AS x,
+               SUM(t.avg_y * COALESCE(t.points_count, 1)) / NULLIF(SUM(COALESCE(t.points_count, 1)), 0) AS y,
+               COALESCE(SUM(t.points_count), 0)      AS points_count,
+               COUNT(*)                              AS matches
         FROM player_avg_positions t {join_sql}
           AND t.source_player_id IN ({ids_csv})
         GROUP BY t.source_player_id
-        HAVING SUM(t.points_count) > 30
-        ORDER BY points_count DESC
+        ORDER BY matches DESC, points_count DESC
     """, params)
     out = []
     for r in raw.itertuples():
@@ -287,9 +287,9 @@ def player_avg_position(player_id: int, season: Optional[str] = None):
     raw = db.read_sql(f"""
         SELECT 'ss_' || t.source_player_id::text AS player_id,
                MAX(t.player_name) AS name,
-               SUM(t.avg_x * t.points_count) / NULLIF(SUM(t.points_count), 0) AS x,
-               SUM(t.avg_y * t.points_count) / NULLIF(SUM(t.points_count), 0) AS y,
-               SUM(t.points_count) AS points_count,
+               SUM(t.avg_x * COALESCE(t.points_count, 1)) / NULLIF(SUM(COALESCE(t.points_count, 1)), 0) AS x,
+               SUM(t.avg_y * COALESCE(t.points_count, 1)) / NULLIF(SUM(COALESCE(t.points_count, 1)), 0) AS y,
+               COALESCE(SUM(t.points_count), 0) AS points_count,
                COUNT(*)          AS matches
         FROM player_avg_positions t {join_sql}
           AND t.source_player_id = :pid

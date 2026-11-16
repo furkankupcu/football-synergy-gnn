@@ -130,8 +130,8 @@ def _build_node_features(season: str, league: str | None = None) -> tuple[pd.Dat
     avg_pos = db.read_sql(f"""
         SELECT
             'ss_' || a.source_player_id::text AS player_id,
-            SUM(a.avg_x * a.points_count) / NULLIF(SUM(a.points_count), 0) AS avg_x,
-            SUM(a.avg_y * a.points_count) / NULLIF(SUM(a.points_count), 0) AS avg_y
+            SUM(a.avg_x * COALESCE(a.points_count, 1)) / NULLIF(SUM(COALESCE(a.points_count, 1)), 0) AS avg_x,
+            SUM(a.avg_y * COALESCE(a.points_count, 1)) / NULLIF(SUM(COALESCE(a.points_count, 1)), 0) AS avg_y
         FROM player_avg_positions a
         JOIN matches m ON m.match_id = a.match_id
         {where_sql}
